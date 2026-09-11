@@ -10,10 +10,22 @@ declare global {
 }
 
 function resolveDbPath(): string {
-  const configured = process.env.DB_PATH ?? "./data/dreamrobot.db";
-  return path.isAbsolute(configured)
-    ? configured
-    : path.join(process.cwd(), configured);
+  if (process.env.DB_PATH) {
+    return path.isAbsolute(process.env.DB_PATH)
+      ? process.env.DB_PATH
+      : path.join(process.cwd(), process.env.DB_PATH);
+  }
+
+  // Na Vercel o filesystem do deploy é somente-leitura fora de /tmp — não dá
+  // para abrir o SQLite em ./data como na VPS. /tmp funciona para clicar e
+  // testar a UI, mas é efêmero: reseta a qualquer momento (cold start, novo
+  // deploy, outra instância). Não é onde o produto mora de verdade — é só
+  // para dar uma URL de teste rápida. Ver docs/handoff-tecnico.md.
+  if (process.env.VERCEL) {
+    return "/tmp/dreamrobot.db";
+  }
+
+  return path.join(process.cwd(), "./data/dreamrobot.db");
 }
 
 function createConnection(): Database.Database {
