@@ -1,4 +1,5 @@
 import { gerarTexto } from "./llm";
+import { getDb } from "./db";
 
 // Qualificação do lead — nota 0 a 100 (spec, seção 03). A mensagem que a
 // pessoa mandou diz mais de intenção que qualquer bio, então quando existe
@@ -99,4 +100,43 @@ function extrairJson(texto: string): { nota?: number; motivo?: string; concorren
   const bloco = texto.match(/\{[\s\S]*\}/);
   if (!bloco) throw new Error(`Resposta da IA sem JSON reconhecível: ${texto.slice(0, 200)}`);
   return JSON.parse(bloco[0]);
+}
+
+/**
+ * Analisa um lead já cadastrado usando o ICP/ofertas do workspace e a
+ * última mensagem dele (quando existir), e grava nota/motivo/concorrente
+ * de volta no lead — é o que a tela de Ranking dispara.
+ */
+export async function analisarEQualificarLead(leadId: number): Promise<ResultadoAnalise> {
+  const db = getDb();
+
+  const lead = db
+    .prepare(
+      `SELECT l.id, l.workspace_id, w.icp, w.ofertas
+       FROM leads l
+       JOIN workspaces w ON w.id = l.workspace_id
+       WHERE l.id = ?`,
+    )
+    .get(leadId) as { id: number; workspace_id: number; icp: string; ofertas: string } | undefined;
+  if (!lead) throw new Error(`Lead ${leadId} não encontrado.`);
+
+  const ultimaMensagem = db
+    .prepare(
+      "SELECT texto FROM mensagens WHERE lead_id = ? AND remetente = 'lead' ORDER BY criado_em DESC LIMIT 1",
+    )
+    .get(leadId) as { texto: string } | undefined;
+
+  const resultado = await analisarLead({
+    icp: lead.icp,
+    ofertas: lead.ofertas,
+    mensagemDireta: ultimaMensagem?.texto,
+  });
+
+  db.prepare(
+    `UPDATE leads
+     SET nota = ?, motivo_nota = ?, concorrente = ?, atualizado_em = datetime('now','localtime')
+     WHERE id = ?`,
+  ).run(resultado.nota, resultado.motivo, resultado.concorrente ? 1 : 0, leadId);
+
+  return resultado;
 }

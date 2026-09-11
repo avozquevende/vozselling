@@ -2,6 +2,7 @@ import { getDb } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { Ranking } from "@/app/admin/dr/Ranking";
 import { Pipeline } from "@/app/admin/dr/Pipeline";
+import { WorkspaceConfig } from "./Config";
 
 // Mesma implementação usada em /social/ranking e /social/pipeline — mexer
 // nesses componentes muda as duas telas (handoff, seção 05).
@@ -32,6 +33,12 @@ export default async function WorkspaceDetalhePage({
           Pipeline
         </h2>
         <Pipeline workspaceId={workspace.id} />
+      </section>
+      <section>
+        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-texto-fraco)" }}>
+          Configurações
+        </h2>
+        <WorkspaceConfig workspaceId={workspace.id} />
       </section>
     </div>
   );

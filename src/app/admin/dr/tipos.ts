@@ -8,6 +8,8 @@ export interface LeadPainel {
   instagram_username: string;
   nome: string | null;
   nota: number | null;
+  motivo_nota: string | null;
+  concorrente: number;
   motivo_parada: string | null;
   mensagens_robo_count: number;
   ultimo_falante: "lead" | "robo" | "operador" | null;

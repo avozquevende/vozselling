@@ -19,6 +19,7 @@ export function Ranking({ workspaceId }: { workspaceId: number }) {
   const [etapas, setEtapas] = useState<EtapaPainel[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [analisando, setAnalisando] = useState<number | null>(null);
 
   async function carregar() {
     setCarregando(true);
@@ -42,6 +43,16 @@ export function Ranking({ workspaceId }: { workspaceId: number }) {
     carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
+
+  async function analisarLead(leadId: number) {
+    setAnalisando(leadId);
+    try {
+      await fetch(`/api/leads/${leadId}/analisar`, { method: "POST" });
+      await carregar();
+    } finally {
+      setAnalisando(null);
+    }
+  }
 
   async function ativarLead(leadId: number) {
     const primeiraEtapaAtiva = etapas.find((e) => e.papel === "prepara");
@@ -82,21 +93,43 @@ export function Ranking({ workspaceId }: { workspaceId: number }) {
               {lead.nota ?? "–"}
             </span>
             <div>
-              <p className="font-medium">@{lead.instagram_username}</p>
+              <p className="font-medium">
+                @{lead.instagram_username}
+                {lead.concorrente === 1 && (
+                  <span className="ml-2 text-xs" style={{ color: "var(--color-atencao)" }}>
+                    concorrente
+                  </span>
+                )}
+              </p>
               {lead.nome && (
                 <p className="text-sm" style={{ color: "var(--color-texto-fraco)" }}>
                   {lead.nome}
                 </p>
               )}
+              {lead.motivo_nota && (
+                <p className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
+                  {lead.motivo_nota}
+                </p>
+              )}
             </div>
           </div>
-          <button
-            onClick={() => ativarLead(lead.id)}
-            className="rounded-md px-3 py-1.5 text-sm font-medium"
-            style={{ background: "var(--color-marca)", color: "white" }}
-          >
-            Ativar
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => analisarLead(lead.id)}
+              disabled={analisando === lead.id}
+              className="rounded-md border px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+              style={{ borderColor: "var(--color-borda)" }}
+            >
+              {analisando === lead.id ? "Analisando…" : lead.nota === null ? "Analisar" : "Reanalisar"}
+            </button>
+            <button
+              onClick={() => ativarLead(lead.id)}
+              className="rounded-md px-3 py-1.5 text-sm font-medium"
+              style={{ background: "var(--color-marca)", color: "white" }}
+            >
+              Ativar
+            </button>
+          </div>
         </div>
       ))}
     </div>

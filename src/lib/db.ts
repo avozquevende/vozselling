@@ -167,6 +167,7 @@ function createConnection(): Database.Database {
 function runMigrations(db: Database.Database): void {
   const migrations: string[] = [
     "ALTER TABLE leads ADD COLUMN motivo_nota TEXT",
+    "ALTER TABLE leads ADD COLUMN concorrente INTEGER NOT NULL DEFAULT 0",
   ];
 
   for (const sql of migrations) {
