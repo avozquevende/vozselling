@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const lead = getDb()
       .prepare(
-        `SELECT id, workspace_id, etapa_id, instagram_username, nome,
+        `SELECT id, workspace_id, etapa_id, instagram_username, instagram_scoped_id, nome,
                 mensagens_robo_count, janela_24h_expira_em
          FROM leads WHERE id = ?`,
       )

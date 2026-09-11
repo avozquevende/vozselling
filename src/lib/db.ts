@@ -65,6 +65,18 @@ function createConnection(): Database.Database {
       expira_em TEXT NOT NULL
     );
 
+    -- Conta do Instagram conectada por workspace (Instagram Login oficial).
+    -- entry.id do webhook é o instagram_business_id — é assim que o webhook
+    -- sabe de qual workspace uma mensagem recebida é.
+    CREATE TABLE IF NOT EXISTS contas_instagram (
+      workspace_id INTEGER PRIMARY KEY REFERENCES workspaces(id),
+      instagram_business_id TEXT NOT NULL UNIQUE,
+      instagram_username TEXT,
+      access_token TEXT NOT NULL,
+      token_expira_em TEXT NOT NULL,
+      conectado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+
     -- Etapas são customizáveis por workspace. O comportamento do robô lê o
     -- "papel" declarado, nunca o nome escrito pelo cliente (ver papeis.ts).
     CREATE TABLE IF NOT EXISTS etapas (
@@ -148,6 +160,13 @@ function createConnection(): Database.Database {
 
   runMigrations(db);
 
+  // Depende de coluna criada em runMigrations — precisa rodar depois.
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_workspace_igsid
+      ON leads(workspace_id, instagram_scoped_id)
+      WHERE instagram_scoped_id IS NOT NULL;
+  `);
+
   return db;
 }
 
@@ -157,6 +176,9 @@ function runMigrations(db: Database.Database): void {
   const migrations: string[] = [
     "ALTER TABLE leads ADD COLUMN motivo_nota TEXT",
     "ALTER TABLE leads ADD COLUMN concorrente INTEGER NOT NULL DEFAULT 0",
+    // ID do lead do lado da Meta (IGSID) — é o que o webhook manda, nunca o
+    // username. Resolve o username via Graph API na primeira mensagem.
+    "ALTER TABLE leads ADD COLUMN instagram_scoped_id TEXT",
   ];
 
   for (const sql of migrations) {

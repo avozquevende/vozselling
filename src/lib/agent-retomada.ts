@@ -1,6 +1,7 @@
 import { getDb } from "./db";
 import { gerarTexto } from "./llm";
 import { avancarPasso, definicaoEscada, type ItemRetomada } from "./retomada";
+import { enviarParaLead } from "./instagram-sync";
 
 const SISTEMA = `Você escreve mensagens curtas de retomada no Instagram Direct, como se fosse a pessoa dona do perfil.
 Um toque por vez, nunca cobra resposta, nunca soa como script de vendas. Siga a orientação da escada abaixo.`;
@@ -57,6 +58,7 @@ export async function processarToqueDeRetomada(
     temperatura: 0.8,
   });
 
+  await enviarParaLead(workspaceId, item.instagram_scoped_id, texto);
   registrarToque(item.lead_id, texto);
   const virouNutricao = item.passo >= 7;
   avancarPasso(item, workspaceId);

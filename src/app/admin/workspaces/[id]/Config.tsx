@@ -22,6 +22,12 @@ interface Usuario {
   papel: string;
 }
 
+interface StatusInstagram {
+  conectado: boolean;
+  username?: string | null;
+  expiraEm?: string;
+}
+
 const campoStyle = {
   borderColor: "var(--color-borda)",
   background: "var(--color-superficie)",
@@ -31,6 +37,7 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
   const [workspace, setWorkspace] = useState<WorkspaceDetalhe | null>(null);
   const [limites, setLimites] = useState<Limites | null>(null);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [instagram, setInstagram] = useState<StatusInstagram | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
 
@@ -44,14 +51,16 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
       fetch(`/api/admin/workspaces/${workspaceId}`),
       fetch(`/api/admin/workspaces/${workspaceId}/usuarios`),
     ]);
-    const { workspace, limites } = (await respWorkspace.json()) as {
+    const { workspace, limites, instagram } = (await respWorkspace.json()) as {
       workspace: WorkspaceDetalhe;
       limites: Limites;
+      instagram: StatusInstagram;
     };
     const { usuarios } = (await respUsuarios.json()) as { usuarios: Usuario[] };
     setWorkspace(workspace);
     setLimites(limites);
     setUsuarios(usuarios);
+    setInstagram(instagram);
   }
 
   useEffect(() => {
@@ -173,6 +182,33 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
           )}
         </div>
       </form>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-texto-fraco)" }}>
+          Instagram
+        </h2>
+        {instagram?.conectado ? (
+          <div
+            className="flex items-center justify-between rounded-lg border px-4 py-3"
+            style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
+          >
+            <p className="text-sm">
+              Conectado {instagram.username ? `como @${instagram.username}` : ""}
+            </p>
+            <span className="text-xs" style={{ color: "var(--color-ok)" }}>
+              ativo
+            </span>
+          </div>
+        ) : (
+          <a
+            href={`/api/instagram/conectar?workspaceId=${workspaceId}`}
+            className="inline-block w-fit rounded-md px-3 py-2 text-sm font-medium"
+            style={{ background: "var(--color-marca)", color: "white" }}
+          >
+            Conectar Instagram
+          </a>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-texto-fraco)" }}>

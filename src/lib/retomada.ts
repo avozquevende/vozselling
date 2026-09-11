@@ -80,6 +80,7 @@ export function definicaoEscada(escada: Escada): DefinicaoEscada {
 export interface ItemRetomada {
   id: number;
   lead_id: number;
+  instagram_scoped_id: string | null;
   escada: Escada;
   passo: number;
   proximo_toque_em: string;
@@ -110,7 +111,7 @@ export function buscarProntosParaToque(workspaceId: number): ItemRetomada[] {
   const db = getDb();
   const rows = db
     .prepare(
-      `SELECT r.id, r.lead_id, r.escada, r.passo, r.proximo_toque_em
+      `SELECT r.id, r.lead_id, l.instagram_scoped_id, r.escada, r.passo, r.proximo_toque_em
        FROM retomada_fila r
        JOIN leads l ON l.id = r.lead_id
        WHERE l.workspace_id = ?

@@ -24,6 +24,20 @@ export async function enviarMensagemDireta(
   }
 }
 
+/** O webhook manda o IGSID (sender.id), nunca o @username — resolve aqui. */
+export async function buscarUsername(accessToken: string, igsid: string): Promise<string> {
+  const url = new URL(`https://graph.instagram.com/v21.0/${igsid}`);
+  url.searchParams.set("fields", "username");
+  url.searchParams.set("access_token", accessToken);
+
+  const resposta = await fetch(url);
+  if (!resposta.ok) {
+    throw new Error(`Falha ao resolver username de ${igsid}: ${resposta.status}`);
+  }
+  const json = (await resposta.json()) as { username?: string };
+  return json.username ?? igsid;
+}
+
 export async function responderComentario(
   accessToken: string,
   comentarioId: string,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, ErroApi } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { limitesDoWorkspace, definirLimitesDoWorkspace } from "@/lib/daily-limits";
+import { contaPorWorkspace } from "@/lib/instagram-contas";
 import { erroParaResposta } from "@/lib/api-utils";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +18,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       | undefined;
     if (!workspace) throw new ErroApi(404, "Workspace não encontrado.");
 
-    return NextResponse.json({ workspace, limites: limitesDoWorkspace(workspaceId) });
+    const conta = contaPorWorkspace(workspaceId);
+    return NextResponse.json({
+      workspace,
+      limites: limitesDoWorkspace(workspaceId),
+      instagram: conta
+        ? { conectado: true, username: conta.instagram_username, expiraEm: conta.token_expira_em }
+        : { conectado: false },
+    });
   } catch (err) {
     return erroParaResposta(err);
   }

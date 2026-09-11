@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const item = getDb()
       .prepare(
-        `SELECT r.id, r.lead_id, r.escada, r.passo, r.proximo_toque_em, l.workspace_id
+        `SELECT r.id, r.lead_id, l.instagram_scoped_id, r.escada, r.passo, r.proximo_toque_em, l.workspace_id
          FROM retomada_fila r
          JOIN leads l ON l.id = r.lead_id
          WHERE r.id = ? AND r.ativo = 1`,

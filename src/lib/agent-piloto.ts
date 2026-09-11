@@ -8,6 +8,7 @@ import {
   type LeadNaFila,
 } from "./piloto";
 import { etapasDoWorkspace, moverLeadParaEtapa } from "./etapas";
+import { enviarParaLead } from "./instagram-sync";
 
 const INSTRUCAO_POR_MODO: Record<ModoConversa, string> = {
   conexao:
@@ -85,6 +86,10 @@ export async function processarProximaMensagem(lead: LeadNaFila): Promise<Result
     temperatura: 0.8,
   });
 
+  // Se tem conta conectada, manda de verdade antes de registrar — assim
+  // mensagens_robo_count/ultimo_falante só avançam se a mensagem realmente
+  // saiu (uma falha de envio aqui joga o erro pra cima, sem gravar nada).
+  await enviarParaLead(lead.workspace_id, lead.instagram_scoped_id, texto);
   registrarMensagemDoRobo(lead.id, texto);
   return { status: "mensagem_gerada", texto, modo };
 }

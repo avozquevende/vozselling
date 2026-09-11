@@ -33,6 +33,7 @@ export interface LeadNaFila {
   workspace_id: number;
   etapa_id: number;
   instagram_username: string;
+  instagram_scoped_id: string | null;
   nome: string | null;
   mensagens_robo_count: number;
   janela_24h_expira_em: string | null;
@@ -47,7 +48,7 @@ export function buscarFilaDoPiloto(workspaceId: number): LeadNaFila[] {
   const db = getDb();
   const rows = db
     .prepare(
-      `SELECT l.id, l.workspace_id, l.etapa_id, l.instagram_username, l.nome,
+      `SELECT l.id, l.workspace_id, l.etapa_id, l.instagram_username, l.instagram_scoped_id, l.nome,
               l.mensagens_robo_count, l.janela_24h_expira_em
        FROM leads l
        JOIN etapas e ON e.id = l.etapa_id
