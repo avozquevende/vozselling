@@ -89,20 +89,25 @@ Arquivos: `retomada.ts`, `agent-retomada.ts`, `piloto.ts`, `agent-piloto.ts`, `a
 
 ### Base de conhecimento do método (`metodologia.ts`)
 
-`agent-a1`, `agent-piloto` e `agent-retomada` combinam a regra estrutural do código (régua, faixas de nota) com o conteúdo salvo na tabela `metodologia` — editável em `/admin/metodologia`, sem precisar de deploy. `src/lib/metodologia-seed.ts` traz o conteúdo inicial de 8 das 13 seções, extraído de aulas reais do Filippe Neto e do time Voz (via tldv, set/2026):
+`agent-a1`, `agent-piloto` e `agent-retomada` combinam a regra estrutural do código (régua, faixas de nota) com o conteúdo salvo na tabela `metodologia` — editável em `/admin/metodologia`, sem precisar de deploy. `src/lib/metodologia-seed.ts` traz o conteúdo inicial das 13 seções (cobertura completa), extraído de aulas reais do Filippe Neto e do time Voz (via tldv, set/2026), do questionário "Definindo a sua comunicação" respondido pelo próprio Filippe, e do manual oficial "Social Selling":
 
 | Seção | Fonte |
 |---|---|
-| `tom_de_voz` | Aula 09/06 — Estrutura de conversa que gera oportunidade |
-| `conexao` | Aula 02/06 — Como abordar pessoas sem parecer interesseiro |
-| `conducao` | Aula 02/06 — Como abordar pessoas sem parecer interesseiro |
-| `convite` | Aula bônus 23/06 — Social selling |
+| `tom_de_voz` | Aula 09/06 · questionário "Definindo a sua comunicação" (Filippe) · manual Social Selling |
+| `conexao` | Aula 02/06 · manual Social Selling (modelos de ADIÇÃO e CONEXÃO) |
+| `conducao` | Aula 02/06 · manual Social Selling (modelos de CONDUÇÃO) |
+| `convite` | Aula bônus 23/06 · manual Social Selling (scripts por origem: novos seguidores, comentários, stories, direct) |
+| `agendamento` | Aula 07/04 · manual Social Selling (Sessão de Diagnóstico → confirmação por WhatsApp) |
 | `qualificacao` | Aula 26/05 — Funil simples para mentorias premium |
+| `retomada_ativacao_nao_respondeu` | Aula bônus 23/06 e Aula 02/06 · manual Social Selling (scripts de Follow-Up e de despedida) |
 | `retomada_conexao_esfriou` | Aula 23/06 — Método de follow-up que não soa como pressão |
+| `retomada_conducao_sentiu_venda` | Aula 07/04 — Como conduzir uma call sem parecer vendedor |
+| `retomada_agendamento` | Aula 12/05 — Como transformar conversas em vendas |
 | `retomada_proposta_aberta` | Aula bônus 23/06 — Social selling |
+| `retomada_sem_caixa` | Aula 07/04 — Como conduzir uma call sem parecer vendedor |
 | `retomada_nao_prioridade` | Aula 23/06 — Método de follow-up que não soa como pressão |
 
-As outras 5 seções (`agendamento`, `retomada_ativacao_nao_respondeu`, `retomada_conducao_sentiu_venda`, `retomada_agendamento`, `retomada_sem_caixa`) ainda estão vazias — não achamos aula específica pra elas no garimpo inicial. Ficam com o comportamento padrão do código até alguém preencher.
+Vocabulário do método (manual oficial): o funil do próprio Filippe é Adição → Conexão → Condução → Conversão → Relacionamento. "Conversão" no vocabulário dele cobre o que a ferramenta trata como `convite` + `agendamento` na régua — a Sessão de Diagnóstico é a call de fechamento, e o WhatsApp é o ambiente final de confirmação ("direcionar pro wpp"), nunca o direct. Essa equivalência está documentada no próprio conteúdo de `tom_de_voz`, sem exigir renomear nada no código.
 
 ## 07 — Subsistemas-chave
 
