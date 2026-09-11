@@ -185,6 +185,10 @@ Solução: `.github/workflows/crons.yml`, já no repositório. Roda no GitHub Ac
 
 Sem esses segredos, o workflow roda mas falha na chamada (401). O agendamento do GitHub Actions tem folga de alguns minutos (não é ao segundo) — normal, não é bug.
 
+### 08.3 — Checar o que já está configurado
+
+`GET /api/setup/status` — sem autenticação de propósito (só diz presença/ausência, nunca o valor) — devolve um JSON com o que está ou não preenchido: chaves de IA, credenciais do Instagram, `CRON_SECRET`/`SESSION_SECRET`, e se o banco é persistente ou o `/tmp` efêmero da Vercel. Dá pra conferir de fora sem precisar logar nem colar nenhuma credencial em lugar nenhum: `curl https://SEU-DOMINIO/api/setup/status`.
+
 ## 09 — Armadilhas conhecidas
 
 1. **Migração de schema não roda sozinha.** A conexão fica em cache no `globalThis`. `ALTER TABLE` novo em `db.ts` só roda depois de reiniciar o processo.
