@@ -1,4 +1,5 @@
 import { getDb } from "./db";
+import { SEED_METODOLOGIA } from "./metodologia-seed";
 
 // Base de conhecimento do método (as aulas/contextos do Filippe). Global —
 // é o método da própria ferramenta, não uma config por cliente como
@@ -31,16 +32,20 @@ export const SECOES_PADRAO: Array<{ chave: string; titulo: string }> = [
   { chave: "retomada_nao_prioridade", titulo: "Retomada — Não é prioridade" },
 ];
 
-/** Idempotente: cria as linhas padrão (vazias) se ainda não existirem. */
+/**
+ * Idempotente: cria as linhas padrão se ainda não existirem, já vindo com o
+ * conteúdo extraído das aulas (metodologia-seed.ts) quando houver. Só
+ * preenche na criação — nunca sobrescreve edição feita depois pela tela.
+ */
 export function garantirSecoesPadrao(): void {
   const db = getDb();
   const inserir = db.prepare(
-    `INSERT INTO metodologia (chave, titulo, conteudo) VALUES (?, ?, '')
+    `INSERT INTO metodologia (chave, titulo, conteudo) VALUES (?, ?, ?)
      ON CONFLICT(chave) DO NOTHING`,
   );
   const transacao = db.transaction(() => {
     for (const secao of SECOES_PADRAO) {
-      inserir.run(secao.chave, secao.titulo);
+      inserir.run(secao.chave, secao.titulo, SEED_METODOLOGIA[secao.chave] ?? "");
     }
   });
   transacao();

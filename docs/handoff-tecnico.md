@@ -87,6 +87,23 @@ Retomada: 7 follow-ups por etapa, cada uma com fala e ritmo próprios, contador 
 
 Arquivos: `retomada.ts`, `agent-retomada.ts`, `piloto.ts`, `agent-piloto.ts`, `agent-a1.ts`.
 
+### Base de conhecimento do método (`metodologia.ts`)
+
+`agent-a1`, `agent-piloto` e `agent-retomada` combinam a regra estrutural do código (régua, faixas de nota) com o conteúdo salvo na tabela `metodologia` — editável em `/admin/metodologia`, sem precisar de deploy. `src/lib/metodologia-seed.ts` traz o conteúdo inicial de 8 das 13 seções, extraído de aulas reais do Filippe Neto e do time Voz (via tldv, set/2026):
+
+| Seção | Fonte |
+|---|---|
+| `tom_de_voz` | Aula 09/06 — Estrutura de conversa que gera oportunidade |
+| `conexao` | Aula 02/06 — Como abordar pessoas sem parecer interesseiro |
+| `conducao` | Aula 02/06 — Como abordar pessoas sem parecer interesseiro |
+| `convite` | Aula bônus 23/06 — Social selling |
+| `qualificacao` | Aula 26/05 — Funil simples para mentorias premium |
+| `retomada_conexao_esfriou` | Aula 23/06 — Método de follow-up que não soa como pressão |
+| `retomada_proposta_aberta` | Aula bônus 23/06 — Social selling |
+| `retomada_nao_prioridade` | Aula 23/06 — Método de follow-up que não soa como pressão |
+
+As outras 5 seções (`agendamento`, `retomada_ativacao_nao_respondeu`, `retomada_conducao_sentiu_venda`, `retomada_agendamento`, `retomada_sem_caixa`) ainda estão vazias — não achamos aula específica pra elas no garimpo inicial. Ficam com o comportamento padrão do código até alguém preencher.
+
 ## 07 — Subsistemas-chave
 
 - `llm.ts` — camada de IA, troca de provedor por env.
