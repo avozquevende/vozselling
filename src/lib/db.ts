@@ -41,7 +41,6 @@ function createConnection(): Database.Database {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nome TEXT NOT NULL,
       slug TEXT NOT NULL UNIQUE,
-      plano_id INTEGER,
       ativo INTEGER NOT NULL DEFAULT 1,
       -- ICP e ofertas alimentam a análise do agent-a1 (nota 0-100).
       icp TEXT NOT NULL DEFAULT '',
@@ -139,28 +138,6 @@ function createConnection(): Database.Database {
       workspace_id INTEGER PRIMARY KEY REFERENCES workspaces(id),
       teto_adicoes_dia INTEGER NOT NULL DEFAULT 50,
       teto_follows_dia INTEGER NOT NULL DEFAULT 50
-    );
-
-    CREATE TABLE IF NOT EXISTS creditos (
-      workspace_id INTEGER PRIMARY KEY REFERENCES workspaces(id),
-      saldo INTEGER NOT NULL DEFAULT 0,
-      atualizado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
-    );
-
-    CREATE TABLE IF NOT EXISTS planos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome TEXT NOT NULL,
-      preco_centavos INTEGER NOT NULL,
-      modulos TEXT NOT NULL DEFAULT '[]'
-    );
-
-    CREATE TABLE IF NOT EXISTS contratos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      workspace_id INTEGER NOT NULL REFERENCES workspaces(id),
-      plano_id INTEGER NOT NULL REFERENCES planos(id),
-      status TEXT NOT NULL CHECK (status IN ('pendente','ativo','cancelado')),
-      referencia_pagamento TEXT,
-      criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
     );
 
     CREATE INDEX IF NOT EXISTS idx_leads_workspace_etapa ON leads(workspace_id, etapa_id);

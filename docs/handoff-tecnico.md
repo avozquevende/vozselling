@@ -2,6 +2,8 @@
 
 Passando o bastão: o que é, como roda, como sobe, onde estão as armadilhas e o que falta.
 
+**Nota de escopo desta instância**: uso interno, não um produto vendido a clientes externos. Sem cobrança — não tem PagDream, não tem Mercado Pago, não tem planos/contratos/créditos. `workspace` aqui só organiza processos internos (ex: contas/times diferentes), não é um "cliente pagante".
+
 ## Comece por aqui
 
 Clone, crie o `.env.local` (peça as chaves ao responsável — nunca estão neste doc), rode `npm install` e `npm run dev`. Abre em `localhost:3000`. O banco é um arquivo (`data/dreamrobot.db`). Leia a seção 9 (Armadilhas) antes do primeiro commit.
@@ -16,7 +18,7 @@ Voz Selling é uma ferramenta de prospecção e condução de vendas no Instagra
 - **Banco**: SQLite (`better-sqlite3`). Um arquivo, acesso síncrono. Sem ORM. Conexão em cache no `globalThis`.
 - **IA**: OpenAI `gpt-4o-mini` via `A1_MODEL`/`A3_MODEL`. Chaves Anthropic e Gemini também suportadas — troca é só variável de ambiente (`src/lib/llm.ts`).
 - **CSS**: Tailwind 4. Sem `tailwind.config`. Tokens em `@theme` dentro de `globals.css`.
-- **Externos**: Meta (Instagram Messaging API oficial), Apify (raspagem, módulo à parte), Mercado Pago, PagDream (cobrança).
+- **Externos**: Meta (Instagram Messaging API oficial), Apify (raspagem, módulo à parte). Sem cobrança nesta instância.
 - **Produção**: VPS Ubuntu · systemd, atrás de Caddy. Deploy por script (`scripts/subir.sh`). Node 22.
 
 ## 03 — Rodar local
@@ -59,7 +61,7 @@ Crons no servidor: piloto (`/api/cron/piloto`) a cada minuto, retomada (`/api/cr
 | Pasta | O que é |
 |---|---|
 | `src/app/social/**` | Painel do cliente (o aluno). |
-| `src/app/admin/**` | Painel interno. Gere workspaces, planos, módulos. |
+| `src/app/admin/**` | Painel interno. Gere workspaces, usuários, configurações. |
 | `src/app/api/**` | Rotas de API. Auth por `requireApiUser`/`requireAdmin`. |
 | `src/lib/**` | Toda a lógica de domínio. |
 
@@ -97,7 +99,6 @@ Arquivos: `retomada.ts`, `agent-retomada.ts`, `piloto.ts`, `agent-piloto.ts`, `a
 - `instagram-*.ts` — oauth, api, sync.
 - `daily-limits.ts` — freios de volume.
 - `comentarios.ts` — automático por faixa de nota.
-- `pagdream.ts` · `contrato.ts` · `mercadopago.ts` — cobrança.
 - `buscar-perfil.ts` — raspagem via Apify (módulo Dream Pickup).
 
 ## 08 — Serviços externos
@@ -117,6 +118,5 @@ Credenciais nunca neste doc. Chaves, tokens e senhas ficam no `.env.local` do se
 
 - **Esqueleto no ar**: núcleo funcional criado nesta sessão (schema, lib de domínio, rotas, UI). Ainda não testado contra contas reais do Instagram nem chaves de produção.
 - **Segurança**: guards de workspace (`requireWorkspaceAccess`) aplicados nas rotas criadas; auditoria completa das rotas ainda pendente conforme o produto crescer.
-- **Cobrança**: fluxo de webhook (Mercado Pago + PagDream) implementado como integração; falta testar ponta a ponta com credenciais reais.
 - **Bloqueio**: Meta App Review — sem isso, só contas testadoras conectam.
 - **Dívida conhecida**: SQLite não escala além de ~20 usuários com folga; migração para Postgres antes de 50 clientes.

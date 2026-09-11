@@ -5,7 +5,6 @@ import { usuarioDaSessao } from "@/lib/auth";
 const LINKS = [
   { href: "/admin", label: "Início" },
   { href: "/admin/workspaces", label: "Workspaces" },
-  { href: "/admin/planos", label: "Planos" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
