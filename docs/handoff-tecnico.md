@@ -189,6 +189,10 @@ Sem esses segredos, o workflow roda mas falha na chamada (401). O agendamento do
 
 `GET /api/setup/status` — sem autenticação de propósito (só diz presença/ausência, nunca o valor) — devolve um JSON com o que está ou não preenchido: chaves de IA, credenciais do Instagram, `CRON_SECRET`/`SESSION_SECRET`, e se o banco é persistente ou o `/tmp` efêmero da Vercel. Dá pra conferir de fora sem precisar logar nem colar nenhuma credencial em lugar nenhum: `curl https://SEU-DOMINIO/api/setup/status`.
 
+### 08.4 — Criar o primeiro acesso admin sem terminal
+
+`/setup` — formulário visual equivalente ao `POST /api/setup/bootstrap-admin` (que por sua vez é o equivalente remoto do `scripts/criar-acesso.mjs`, que só funciona com acesso a filesystem local). Pede o `CRON_SECRET` (o mesmo das env vars do Vercel) + nome/email/senha, e cria (ou atualiza, se o email já existir) um acesso `admin`. Depois disso, login normal em `/login`.
+
 ## 09 — Armadilhas conhecidas
 
 1. **Migração de schema não roda sozinha.** A conexão fica em cache no `globalThis`. `ALTER TABLE` novo em `db.ts` só roda depois de reiniciar o processo.
