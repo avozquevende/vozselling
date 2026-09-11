@@ -1,0 +1,102 @@
+import { gerarTexto } from "./llm";
+
+// Qualificação do lead — nota 0 a 100 (spec, seção 03). A mensagem que a
+// pessoa mandou diz mais de intenção que qualquer bio, então quando existe
+// DM ela pesa mais que o perfil na análise.
+
+export type FaixaNota = "perfeito" | "forte" | "parcial" | "fraco" | "fora";
+
+export interface ClassificacaoNota {
+  faixa: FaixaNota;
+  acao:
+    | "abordar_hoje"
+    | "cadencia_do_dia"
+    | "abordar_se_sobrar_capacidade"
+    | "nutrir_sem_abordagem"
+    | "descartar"
+    | "so_nutrir";
+}
+
+/**
+ * Concorrente tem os mesmos sinais bonitos do cliente ideal — por isso não
+ * usa a tabela normal: mesmo com nota baixa, a ação é "só nutrir", nunca
+ * "descartar" (ele ainda é alguém do mercado, só não é lead).
+ */
+export function classificarNota(
+  nota: number,
+  opcoes?: { concorrente?: boolean },
+): ClassificacaoNota {
+  const notaClamped = Math.max(0, Math.min(100, Math.round(nota)));
+
+  if (opcoes?.concorrente && notaClamped < 30) {
+    return { faixa: "fora", acao: "so_nutrir" };
+  }
+  if (notaClamped >= 90) return { faixa: "perfeito", acao: "abordar_hoje" };
+  if (notaClamped >= 70) return { faixa: "forte", acao: "cadencia_do_dia" };
+  if (notaClamped >= 50) return { faixa: "parcial", acao: "abordar_se_sobrar_capacidade" };
+  if (notaClamped >= 30) return { faixa: "fraco", acao: "nutrir_sem_abordagem" };
+  return { faixa: "fora", acao: "descartar" };
+}
+
+export interface DadosParaAnalise {
+  icp: string;
+  ofertas: string;
+  bio?: string;
+  posts?: string;
+  seguidores?: number;
+  mensagemDireta?: string;
+}
+
+export interface ResultadoAnalise {
+  nota: number;
+  motivo: string;
+  concorrente: boolean;
+}
+
+const SISTEMA = `Você analisa perfis do Instagram para qualificar leads de vendas.
+Responda SEMPRE em JSON puro, sem markdown, no formato:
+{"nota": <0 a 100>, "motivo": "<uma frase curta e concreta>", "concorrente": <true|false>}
+
+Regras:
+- A mensagem direta (quando existir) diz mais sobre intenção do que a bio — pese mais nela.
+- Bio profissional e público idêntico ao ICP não são, sozinhos, sinal de nota alta: também é a cara de um concorrente do mesmo mercado. Marque "concorrente": true quando o perfil parecer alguém que vende o mesmo tipo de coisa, não alguém que compraria.
+- Nota 90-100: encaixe perfeito com o ICP + sinal quente + budget visível.
+- Nota 70-89: encaixe forte, sem sinal quente.
+- Nota 50-69: encaixe parcial (falta budget ou consciência do problema).
+- Nota 30-49: encaixe fraco.
+- Nota 0-29: fora do alvo, ou concorrente, ou em regra de exclusão explícita.`;
+
+function montarPrompt(dados: DadosParaAnalise): string {
+  const partes = [
+    `ICP (perfil de cliente ideal): ${dados.icp}`,
+    `Ofertas do negócio: ${dados.ofertas}`,
+  ];
+  if (dados.bio) partes.push(`Bio do perfil: ${dados.bio}`);
+  if (dados.posts) partes.push(`Resumo dos últimos posts: ${dados.posts}`);
+  if (dados.seguidores !== undefined) partes.push(`Seguidores: ${dados.seguidores}`);
+  if (dados.mensagemDireta) partes.push(`Mensagem que a pessoa mandou: "${dados.mensagemDireta}"`);
+  return partes.join("\n");
+}
+
+export async function analisarLead(dados: DadosParaAnalise): Promise<ResultadoAnalise> {
+  const modelo = process.env.A1_MODEL ?? "gpt-4o-mini";
+  const resposta = await gerarTexto({
+    modelo,
+    sistema: SISTEMA,
+    prompt: montarPrompt(dados),
+    temperatura: 0.2,
+  });
+
+  const json = extrairJson(resposta);
+  return {
+    nota: Math.max(0, Math.min(100, Math.round(Number(json.nota) || 0))),
+    motivo: String(json.motivo ?? "").slice(0, 300),
+    concorrente: Boolean(json.concorrente),
+  };
+}
+
+function extrairJson(texto: string): { nota?: number; motivo?: string; concorrente?: boolean } {
+  const bloco = texto.match(/\{[\s\S]*\}/);
+  if (!bloco) throw new Error(`Resposta da IA sem JSON reconhecível: ${texto.slice(0, 200)}`);
+  return JSON.parse(bloco[0]);
+}
