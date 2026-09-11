@@ -1,5 +1,6 @@
 import { gerarTexto } from "./llm";
 import { getDb } from "./db";
+import { buscarSecao } from "./metodologia";
 
 // Qualificação do lead — nota 0 a 100 (spec, seção 03). A mensagem que a
 // pessoa mandou diz mais de intenção que qualquer bio, então quando existe
@@ -54,18 +55,29 @@ export interface ResultadoAnalise {
   concorrente: boolean;
 }
 
-const SISTEMA = `Você analisa perfis do Instagram para qualificar leads de vendas.
+// A régua de faixas abaixo é estrutural — não muda por método (é o que
+// classificarNota() também aplica em código, então os dois precisam bater).
+// O que o método do Filippe acrescenta (buscarSecao) é a camada de cima:
+// como ler os sinais, o que pesa mais, os exemplos — não a régua em si.
+function montarSistema(): string {
+  const base = `Você analisa perfis do Instagram para qualificar leads de vendas.
 Responda SEMPRE em JSON puro, sem markdown, no formato:
 {"nota": <0 a 100>, "motivo": "<uma frase curta e concreta>", "concorrente": <true|false>}
 
-Regras:
-- A mensagem direta (quando existir) diz mais sobre intenção do que a bio — pese mais nela.
-- Bio profissional e público idêntico ao ICP não são, sozinhos, sinal de nota alta: também é a cara de um concorrente do mesmo mercado. Marque "concorrente": true quando o perfil parecer alguém que vende o mesmo tipo de coisa, não alguém que compraria.
+Faixas (regra fixa, não muda):
 - Nota 90-100: encaixe perfeito com o ICP + sinal quente + budget visível.
 - Nota 70-89: encaixe forte, sem sinal quente.
 - Nota 50-69: encaixe parcial (falta budget ou consciência do problema).
 - Nota 30-49: encaixe fraco.
-- Nota 0-29: fora do alvo, ou concorrente, ou em regra de exclusão explícita.`;
+- Nota 0-29: fora do alvo, ou concorrente, ou em regra de exclusão explícita.
+- A mensagem direta (quando existir) diz mais sobre intenção do que a bio — pese mais nela.
+- Bio profissional e público idêntico ao ICP não são, sozinhos, sinal de nota alta: também é a cara de um concorrente do mesmo mercado. Marque "concorrente": true quando o perfil parecer alguém que vende o mesmo tipo de coisa, não alguém que compraria.`;
+
+  const partesMetodo = [buscarSecao("qualificacao"), buscarSecao("tom_de_voz")].filter(Boolean);
+  if (partesMetodo.length === 0) return base;
+
+  return `${base}\n\n--- Como qualificar, segundo o método (aplique junto com as faixas acima) ---\n${partesMetodo.join("\n\n")}`;
+}
 
 function montarPrompt(dados: DadosParaAnalise): string {
   const partes = [
@@ -83,7 +95,7 @@ export async function analisarLead(dados: DadosParaAnalise): Promise<ResultadoAn
   const modelo = process.env.A1_MODEL ?? "gpt-4o-mini";
   const resposta = await gerarTexto({
     modelo,
-    sistema: SISTEMA,
+    sistema: montarSistema(),
     prompt: montarPrompt(dados),
     temperatura: 0.2,
   });

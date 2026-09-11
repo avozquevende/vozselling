@@ -2,9 +2,15 @@ import { getDb } from "./db";
 import { gerarTexto } from "./llm";
 import { avancarPasso, definicaoEscada, type ItemRetomada } from "./retomada";
 import { enviarParaLead } from "./instagram-sync";
+import { buscarSecao } from "./metodologia";
 
-const SISTEMA = `Você escreve mensagens curtas de retomada no Instagram Direct, como se fosse a pessoa dona do perfil.
+const SISTEMA_BASE = `Você escreve mensagens curtas de retomada no Instagram Direct, como se fosse a pessoa dona do perfil.
 Um toque por vez, nunca cobra resposta, nunca soa como script de vendas. Siga a orientação da escada abaixo.`;
+
+function montarSistema(): string {
+  const tomDeVoz = buscarSecao("tom_de_voz");
+  return tomDeVoz ? `${SISTEMA_BASE}\n\n${tomDeVoz}` : SISTEMA_BASE;
+}
 
 interface HistoricoItem {
   remetente: "lead" | "robo" | "operador";
@@ -20,13 +26,17 @@ function buscarHistorico(leadId: number): HistoricoItem[] {
     .all(leadId) as HistoricoItem[];
 }
 
-function montarPrompt(comoFala: string, historico: HistoricoItem[]): string {
+function montarPrompt(escada: string, comoFala: string, historico: HistoricoItem[]): string {
   const conversa = historico
     .slice()
     .reverse()
     .map((m) => `${m.remetente === "lead" ? "Lead" : "Você"}: ${m.texto}`)
     .join("\n");
-  return `Orientação desta escada: ${comoFala}\n\nÚltimas mensagens da conversa:\n${conversa || "(sem histórico ainda)"}\n\nEscreva o toque de retomada, só o texto dele.`;
+
+  const doMetodo = buscarSecao(`retomada_${escada}`);
+  const orientacao = doMetodo ? `${comoFala}\n\n${doMetodo}` : comoFala;
+
+  return `Orientação desta escada: ${orientacao}\n\nÚltimas mensagens da conversa:\n${conversa || "(sem histórico ainda)"}\n\nEscreva o toque de retomada, só o texto dele.`;
 }
 
 function registrarToque(leadId: number, texto: string): void {
@@ -53,8 +63,8 @@ export async function processarToqueDeRetomada(
 
   const texto = await gerarTexto({
     modelo: process.env.A3_MODEL ?? "gpt-4o-mini",
-    sistema: SISTEMA,
-    prompt: montarPrompt(definicao.comoFala, historico),
+    sistema: montarSistema(),
+    prompt: montarPrompt(item.escada, definicao.comoFala, historico),
     temperatura: 0.8,
   });
 

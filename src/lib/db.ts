@@ -152,6 +152,17 @@ function createConnection(): Database.Database {
       teto_follows_dia INTEGER NOT NULL DEFAULT 50
     );
 
+    -- Base de conhecimento do método (o "como o Filippe ensina a vender").
+    -- Global, não por workspace: é o método da ferramenta, não do cliente.
+    -- Os agentes (agent-a1, agent-piloto, agent-retomada) leem daqui por
+    -- cima da lógica estrutural (régua, faixas de nota) que fica no código.
+    CREATE TABLE IF NOT EXISTS metodologia (
+      chave TEXT PRIMARY KEY,
+      titulo TEXT NOT NULL,
+      conteudo TEXT NOT NULL DEFAULT '',
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_leads_workspace_etapa ON leads(workspace_id, etapa_id);
     CREATE INDEX IF NOT EXISTS idx_mensagens_lead ON mensagens(lead_id, criado_em);
     CREATE INDEX IF NOT EXISTS idx_retomada_ativo ON retomada_fila(ativo, proximo_toque_em);

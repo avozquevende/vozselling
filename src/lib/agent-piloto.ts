@@ -9,6 +9,7 @@ import {
 } from "./piloto";
 import { etapasDoWorkspace, moverLeadParaEtapa } from "./etapas";
 import { enviarParaLead } from "./instagram-sync";
+import { buscarSecao } from "./metodologia";
 
 const INSTRUCAO_POR_MODO: Record<ModoConversa, string> = {
   conexao:
@@ -26,6 +27,20 @@ const INSTRUCAO_POR_MODO: Record<ModoConversa, string> = {
 const SISTEMA_BASE = `Você escreve mensagens de Instagram Direct como se fosse a pessoa dona do perfil (não como assistente).
 Frase curta, tom humano e falado, nunca em blocos longos. Nunca se identifique como IA.
 Siga estritamente o modo indicado abaixo — ele diz o que pode e o que não pode ainda.`;
+
+/**
+ * INSTRUCAO_POR_MODO é a regra estrutural da régua (o que pode/não pode
+ * ainda) — nunca muda por método. O conteúdo do Filippe (buscarSecao) entra
+ * por cima: script, exemplos, forma de perguntar — a voz, não a régua.
+ */
+function montarSistema(modo: Exclude<ModoConversa, "excedeu_regua">): string {
+  const base = `${SISTEMA_BASE}\n\n${INSTRUCAO_POR_MODO[modo]}`;
+  const tomDeVoz = buscarSecao("tom_de_voz");
+  const doMetodo = buscarSecao(modo);
+  const partes = [tomDeVoz, doMetodo].filter(Boolean);
+  if (partes.length === 0) return base;
+  return `${base}\n\n--- Como fazer isso, segundo o método ---\n${partes.join("\n\n")}`;
+}
 
 interface HistoricoItem {
   remetente: "lead" | "robo" | "operador";
@@ -78,7 +93,7 @@ export async function processarProximaMensagem(lead: LeadNaFila): Promise<Result
   }
 
   const historico = buscarHistorico(lead.id);
-  const sistema = `${SISTEMA_BASE}\n\n${INSTRUCAO_POR_MODO[modo]}`;
+  const sistema = montarSistema(modo);
   const texto = await gerarTexto({
     modelo: process.env.A3_MODEL ?? "gpt-4o-mini",
     sistema,
