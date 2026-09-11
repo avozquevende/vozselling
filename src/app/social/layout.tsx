@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/social/ranking", label: "Ranking" },
   { href: "/social/pipeline", label: "Pipeline" },
   { href: "/social/retomada", label: "Retomada" },
+  { href: "/social/carreira", label: "Carreira" },
 ];
 
 export default async function SocialLayout({ children }: { children: React.ReactNode }) {

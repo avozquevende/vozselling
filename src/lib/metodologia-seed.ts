@@ -30,7 +30,17 @@ Estrutura mental de toda conversa, do início ao pós-venda: adição → conex�
 
 Áudio: manda poucos por padrão, mas produz sob pedido — inclusive vídeo de visualização única. Emoji: usa poucos (emoji demais "parece ChatGPT"), mas usa deliberadamente um emoji de curiosidade/susto seguido de áudio ou vídeo de visualização única — a combinação desperta curiosidade e funciona quase sempre.
 
-Direção final: o objetivo declarado de toda a régua é levar a conversa para o WhatsApp ("direcionar pro wpp") — é lá que a Sessão de Diagnóstico é confirmada.`,
+Direção final: o objetivo declarado de toda a régua é levar a conversa para o WhatsApp ("direcionar pro wpp") — é lá que a Sessão de Diagnóstico é confirmada.
+
+Fonte: manual oficial "Método VOZ SELLING™" (Filippe Neto, Ana Ferraz, Pablo Marçal) — Credo do Social Seller e postura geral.
+
+Credo: "Eu converso para escutar. Eu vendo com presença, não com pressão. Eu não empurro, eu conduzo. Eu gero valor antes de cobrar valor. Eu sou ponte entre dor e solução." Juramento do método: "Prometo escutar antes de vender. Conduzir antes de convencer. E crescer com método, presença e verdade."
+
+4 padrões de erro a nunca repetir (o manual chama de "falsos sellers"): 1) o Conselheiro — dá consultoria de graça no direct em vez de levar pra sessão; 2) o Reativo — só responde quando é chamado, nunca inicia nem convida; 3) o Legalzão — responde só com elogios e emojis ("que bacana 😍"), confunde conexão com condução e nunca avança; 4) o Esnobe técnico — fala como quem ensina, usa jargão, soa superior em vez de conversar. Regra prática: se uma frase termina sem pergunta, ela não está conduzindo a conversa a lugar nenhum.
+
+Checklist antes de mandar qualquer mensagem: estou falando com presença ou com ansiedade? Essa frase termina com uma pergunta? Estou guiando ou vendendo? Essa pessoa vai querer continuar a conversa ou vai fugir dela?
+
+Metas de referência do método, por semana (não são regra rígida do código, são o padrão de performance do próprio Filippe): 150 a 200 abordagens iniciadas, 10 a 15 sessões agendadas, resposta em ≥40% das abordagens, conversão sessão→venda ≥25%, tempo médio de resposta abaixo de 4h úteis.`,
 
   conexao: `Fonte: Aula 02/06 — Como abordar pessoas sem parecer interesseiro (Filippe Neto).
 
@@ -62,7 +72,15 @@ Modelos de CONEXÃO (depois que a pessoa respondeu à adição — pergunta aber
 - "[Nome], me conta com o que você trabalha hoje e por que você quer tanto melhorar a sua carreira?"
 - "Por que você quer dar esse próximo passo na sua vida pessoal?"
 - "Me conta por que você quer tanto fazer esse processo para melhorar a vida da sua família?"
-- "Ótimo saber que você quer mais saúde, [Nome]. Agora me conta: por que você quer tanto essa melhora na sua vida?"`,
+- "Ótimo saber que você quer mais saúde, [Nome]. Agora me conta: por que você quer tanto essa melhora na sua vida?"
+
+Fonte: manual oficial "Método VOZ SELLING™" (capítulos 5 e 6) — etapas ADIÇÃO e CONEXÃO.
+
+ADIÇÃO: entra pela vaidade, não pela venda. Objetivo é ativar vaidade + curiosidade e fazer a pessoa responder sem se sentir abordada. Exemplo: "Vi seu vídeo sobre contratos afetivos. Nunca vi alguém explicar com tanta clareza. Se eu soubesse disso antes, já estaria casado e rico 😂" — funciona porque é específico e verificável, não porque é engraçado. ❌ Nunca: "Oi, tudo bem? Eu sou mentor em [x] e queria te mostrar algo…" — ativa o gatilho de "vão me vender algo" e a pessoa trava antes mesmo de responder.
+
+CONEXÃO: valida, expande, escuta — não argumenta. Objetivo é ampliar a visão do lead sobre o que ele já faz, fazer ele se enxergar com mais autoridade. Exemplo: "Você já percebeu o quanto o que você ensina poderia ajudar gente que nem conhece esse assunto? Isso precisa escalar." ❌ Nunca encerrar rápido com algo como "Legal! Se quiser saber mais sobre meus serviços, o link tá na bio" — isso sai da conversa sem criar vínculo nenhum.
+
+Palavras que aproximam (usar): "curioso pra saber como você vê isso…", "você já pensou em…", "o que você faz é potente…", "tem muita gente precisando disso que você tem". Palavras que afastam (nunca usar): "você precisa comprar isso", "você está perdendo tempo", "se você não fizer, vai se arrepender", "isso que você faz é só hobby?".`,
 
   conducao: `Fonte: Aula 02/06 — Como abordar pessoas sem parecer interesseiro (Filippe Neto).
 
@@ -85,7 +103,11 @@ Modelos de CONDUÇÃO (depois que a conexão foi estabelecida — perguntas que 
 - "Me conta por que você quer tanto fazer esse processo para melhorar a vida da sua família?"
 - "Ótimo saber que você quer mais saúde, [Nome]. Agora me conta: por que você quer tanto essa melhora na sua vida?"
 
-Descoberta de renda sem perguntar direto (lógica de estimativa, nunca pergunta "quanto você fatura"): cruza sinais que a própria pessoa já deu — nº de clientes/alunos × ticket médio × duração média do produto. Exemplo do manual: 10 alunos, 10 mil de ticket, 6 meses de duração → estimativa de ~16k/mês. Serve para calibrar a oferta, não para expor a conta pra pessoa.`,
+Descoberta de renda sem perguntar direto (lógica de estimativa, nunca pergunta "quanto você fatura"): cruza sinais que a própria pessoa já deu — nº de clientes/alunos × ticket médio × duração média do produto. Exemplo do manual: 10 alunos, 10 mil de ticket, 6 meses de duração → estimativa de ~16k/mês. Serve para calibrar a oferta, não para expor a conta pra pessoa.
+
+Fonte: manual oficial "Método VOZ SELLING™" (capítulos 5 e 6) — etapa CONDUÇÃO.
+
+Lógica: descobrir se há produto, ticket, entrega e desejo — sem parecer invasivo. Perguntas úteis: "Hoje você já atende pessoas com isso?", "Quantos clientes em média você tem por mês?", "Você já tem mentoria, curso, ou é tudo 1:1?", "Você já atende como — tudo presencial ou já tem algo digital rodando?". ❌ Nunca pergunte direto "Quanto você fatura?" ou "Você tem dinheiro pra investir?" — ativa defesa na hora e destrói a elegância da conversa. A condução é onde se separa curioso de comprador, sempre com respeito — o lead deve sentir que está sendo ouvido, não avaliado.`,
 
   retomada_conexao_esfriou: `Fonte: Aula 23/06 — Método de follow-up que não soa como pressão (Leandro Schlemper, time Voz).
 
@@ -97,7 +119,13 @@ Se a pessoa responde "top" e para por aí, não força a venda — continua o re
 
 Seja "interessante", não "interesseiro": a régua de retomada funciona melhor quando a pessoa te vê como alguém que conecta e resolve (uma "ponte"), não como alguém que só aparece quando quer vender. Pergunte "você tá precisando de alguma coisa?" genuinamente, mesmo sem intenção de venda imediata — isso é o que faz a pessoa voltar a procurar você quando ela precisar.
 
-Medição prática: se você reativa uma lista de contatos frios e menos de 25% responde, o relacionamento esfriou de verdade — precisa investir mais em presença (curtir, comentar, aparecer) antes da próxima tentativa de contato direto.`,
+Medição prática: se você reativa uma lista de contatos frios e menos de 25% responde, o relacionamento esfriou de verdade — precisa investir mais em presença (curtir, comentar, aparecer) antes da próxima tentativa de contato direto.
+
+Fonte: manual oficial "Método VOZ SELLING™" (capítulo 7) — diagnóstico de conversa parada após a Conexão.
+
+Erro típico nesse ponto: a conversa morreu porque a resposta ao "sim" do lead foi rasa demais (ex: lead disse "sim", robô respondeu só "legal", e nada mais avançou) — todo "sim" precisa ser aproveitado com uma pergunta que aprofunda, nunca com uma confirmação vazia.
+
+Follow-up de referência para quem parou depois da Conexão: "Fiquei pensando no que você disse sobre [tema]. Me deu um insight aqui. Posso te mandar?" — retoma com um gancho de valor genuíno ligado ao que a pessoa já falou, nunca com um "oi, tudo bem?" genérico.`,
 
   retomada_nao_prioridade: `Fonte: Aula 23/06 — Método de follow-up que não soa como pressão (Leandro Schlemper, time Voz).
 
@@ -143,13 +171,23 @@ Sequência para quem "REAGIU/RESPONDEU A UM STORY": abre citando o contexto real
 
 Sequência para quem "COMENTOU" num post: primeiro responde o comentário publicamente de forma positiva e específica (nunca só emoji, se a intenção é puxar pro direct); depois manda mensagem no direct citando o comentário dela antes de seguir o mesmo funil até o link da sessão.
 
-Regra de formatação: nunca mandar a mensagem inteira em um bloco só — quebrar em mensagens menores, e sempre terminar cada mensagem com uma pergunta ou pedido concreto, nunca deixar a pessoa sem saber o que responder.`,
+Regra de formatação: nunca mandar a mensagem inteira em um bloco só — quebrar em mensagens menores, e sempre terminar cada mensagem com uma pergunta ou pedido concreto, nunca deixar a pessoa sem saber o que responder.
+
+Fonte: manual oficial "Método VOZ SELLING™" (capítulos 5 e 6) — etapa CONVERSÃO.
+
+Lógica: convidar com clareza, não com pressão. Não é papo antes da venda — o convite certo já é a venda começando. Exemplo: "Você tem ouro nas mãos. Se eu te desse 40 min com meu time pra desenhar um plano de escala, você toparia?" — sempre seguido de opções concretas de horário e uma nota real de escassez (últimas vagas da semana, por exemplo), nunca "quando você quiser". ❌ Nunca convide assim: "Tenho uma mentoria e acho que encaixa pra você. Quer conhecer?" — soa a venda direta e provoca recuo. A conversão só funciona quando vem depois de escuta real: se as etapas anteriores (adição, conexão, condução) foram bem feitas, o sim vem fácil; se a conversão foi pulada direto, ela vira pitch e trava.`,
 
   retomada_proposta_aberta: `Fonte: Aula bônus - social selling, 23/06 (Leandro Schlemper, time Voz).
 
 Quando o link/proposta já foi enviado e a pessoa não respondeu, ela não some da fila — vira um estado que precisa de cobrança ativa: "você precisa estar cobrando a pessoa de fazer o pagamento." O time usa tag "enviado" pra marcar quem está nesse ponto e conseguir filtrar visualmente quem precisa do próximo toque, sem depender de lembrar de cabeça.
 
-O toque de cobrança não repete a proposta — pergunta o que travou ("que que tá acontecendo, o que você precisa de ajuda?") e resolve a objeção específica que aparecer, sem baixar o valor de cara. Se travou por causa de agenda/data, pergunta objetivamente ("você tem algo marcado nesse dia?") em vez de deixar a proposta esfriando no vácuo.`,
+O toque de cobrança não repete a proposta — pergunta o que travou ("que que tá acontecendo, o que você precisa de ajuda?") e resolve a objeção específica que aparecer, sem baixar o valor de cara. Se travou por causa de agenda/data, pergunta objetivamente ("você tem algo marcado nesse dia?") em vez de deixar a proposta esfriando no vácuo.
+
+Fonte: manual oficial "Método VOZ SELLING™" (capítulo 7) — diagnóstico de lead sumido depois do link/convite.
+
+❌ Nunca cobre assim: "Você vai agendar ou não? Tô esperando…" — soa a pressão e piora a chance de resposta. ✅ Follow-up de referência: "Ei! Sei que a rotina pode engolir a gente às vezes. Só passando aqui pra ver se ainda faz sentido pra você. Se quiser deixar pra depois, tá tudo certo também." — tira a pressão e ainda assim mantém a porta aberta, o que costuma gerar mais resposta do que insistir.
+
+Caso real de recuperação: um lead reagiu a um story, elogiou, e sumiu. Três dias depois, o follow-up foi "Vi que nossa conversa parou aqui. Às vezes o tempo foge mesmo, e a gente nem percebe. Se ainda fizer sentido falar disso, sigo com o mesmo entusiasmo de quando comecei." — resultado: sessão agendada. O ingrediente comum é reconhecer o silêncio sem cobrar, e reabrir com o mesmo entusiasmo de antes, não com irritação.`,
 
   qualificacao: `Fonte: Aula 26/05 — Funil simples para mentorias premium (Filippe Neto).
 
@@ -177,7 +215,11 @@ Gatilho de proximidade: indicação de alguém que já confia fecha mais rápido
 
 Fonte: manual oficial "Social Selling" (Filippe Neto) — etapa 3 do processo.
 
-O convite no direct nunca fecha a venda sozinho — ele existe pra levar a pessoa até a Sessão de Diagnóstico (a call de verdade, onde a venda acontece). Depois que o link é enviado e a pessoa confirma o agendamento, o próximo passo declarado é sempre o mesmo: "agora é só aguardar que a equipe vai entrar em contato com você pelo WhatsApp para confirmar a sua sessão" — o WhatsApp é o ambiente final antes da call, não o direct.`,
+O convite no direct nunca fecha a venda sozinho — ele existe pra levar a pessoa até a Sessão de Diagnóstico (a call de verdade, onde a venda acontece). Depois que o link é enviado e a pessoa confirma o agendamento, o próximo passo declarado é sempre o mesmo: "agora é só aguardar que a equipe vai entrar em contato com você pelo WhatsApp para confirmar a sua sessão" — o WhatsApp é o ambiente final antes da call, não o direct.
+
+Fonte: manual oficial "Método VOZ SELLING™" — indicadores de saúde do funil (capítulo 8), referência para calibrar prioridade e ritmo de agendamento.
+
+Metas semanais de referência: 150-200 abordagens iniciadas, 10-15 sessões agendadas, ≥40% de resposta sobre as abordagens, ≥25% de conversão sessão→venda, tempo médio de resposta abaixo de 4h úteis. Servem para calibrar se a régua está tratando gente demais como "excedeu régua" sem converter, ou se está sendo rápida demais em oferecer agendamento sem qualificação suficiente.`,
 
   retomada_ativacao_nao_respondeu: `Fonte: Aula bônus - social selling, 23/06, e Aula 02/06 (Filippe Neto / Leandro Schlemper, time Voz).
 
@@ -196,6 +238,10 @@ Modelos de follow-up, em ordem crescente de insistência:
 2. "[Nome], me confirma se conseguiu, porque quero te ajudar nesse processo."
 3. "[Nome], conseguiu ou posso disponibilizar sua vaga para outra pessoa?"
 4. "Aconteceu alguma coisa, [Nome]? Estou esperando uma resposta sua sobre a sessão... me confirma seu agendamento e vamos juntos para o próximo nível."
+
+Fonte: manual oficial "Método VOZ SELLING™" (capítulo 7) — follow-up para quem nunca respondeu ao primeiro contato.
+
+Mensagem de referência para quem nunca respondeu: "Talvez não faça sentido agora — e tá tudo bem. Mas se um dia quiser clareza pra dar o próximo passo, pode me chamar sem receio." Sem cobrança, sem "por que você não respondeu" — só deixa a porta aberta com leveza, o que preserva a chance de a pessoa voltar quando o momento dela mudar.
 
 Script de despedida (último recurso, quando nada dos anteriores gerou resposta): reconhece que tentou várias vezes sem cobrar, dá a decisão de volta pra pessoa sem hostilidade, e comunica que vai parar de insistir porque precisa focar em quem está pronto pra evoluir agora — sem deixar a porta funcionalmente fechada (tom de "forte abraço", não de rompimento). É o ponto em que a régua para de tentar reativar essa pessoa por conta própria e ela cai pra manutenção de longuíssimo prazo.`,
 

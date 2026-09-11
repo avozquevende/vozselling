@@ -58,6 +58,20 @@ function createConnection(): Database.Database {
       criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
     );
 
+    -- Escada de carreira do Social Seller (manual "Método VOZ SELLING™",
+    -- capítulo 9): executor → intérprete → gestor → expert. Promoção nunca é
+    -- automática — carreira.ts só sinaliza quando as métricas batem a meta do
+    -- método; quem confirma é sempre um admin, registrado em nivel_eventos.
+    CREATE TABLE IF NOT EXISTS nivel_eventos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+      nivel_anterior TEXT NOT NULL,
+      nivel_novo TEXT NOT NULL,
+      observacao TEXT NOT NULL DEFAULT '',
+      criado_por INTEGER REFERENCES usuarios(id),
+      criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+
     CREATE TABLE IF NOT EXISTS sessoes (
       token TEXT PRIMARY KEY,
       usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
@@ -176,6 +190,8 @@ function createConnection(): Database.Database {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_workspace_igsid
       ON leads(workspace_id, instagram_scoped_id)
       WHERE instagram_scoped_id IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_leads_responsavel ON leads(responsavel_id);
+    CREATE INDEX IF NOT EXISTS idx_nivel_eventos_usuario ON nivel_eventos(usuario_id, criado_em);
   `);
 
   return db;
@@ -190,6 +206,9 @@ function runMigrations(db: Database.Database): void {
     // ID do lead do lado da Meta (IGSID) — é o que o webhook manda, nunca o
     // username. Resolve o username via Graph API na primeira mensagem.
     "ALTER TABLE leads ADD COLUMN instagram_scoped_id TEXT",
+    "ALTER TABLE leads ADD COLUMN responsavel_id INTEGER REFERENCES usuarios(id)",
+    // executor | interprete | gestor | expert — ver lib/carreira.ts.
+    "ALTER TABLE usuarios ADD COLUMN nivel_carreira TEXT NOT NULL DEFAULT 'executor'",
   ];
 
   for (const sql of migrations) {

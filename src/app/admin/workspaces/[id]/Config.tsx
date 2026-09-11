@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Carreira } from "@/app/admin/dr/Carreira";
 
 interface WorkspaceDetalhe {
   id: number;
@@ -45,6 +46,7 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
   const [emailOperador, setEmailOperador] = useState("");
   const [senhaOperador, setSenhaOperador] = useState("");
   const [erroOperador, setErroOperador] = useState<string | null>(null);
+  const [carreiraAberta, setCarreiraAberta] = useState<number | null>(null);
 
   async function carregar() {
     const [respWorkspace, respUsuarios] = await Promise.all([
@@ -218,13 +220,31 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
           {usuarios.map((u) => (
             <div
               key={u.id}
-              className="flex items-center justify-between rounded-lg border px-4 py-2"
+              className="rounded-lg border px-4 py-2"
               style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
             >
-              <p className="text-sm font-medium">{u.nome}</p>
-              <p className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-                {u.email}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">{u.nome}</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
+                    {u.email}
+                  </p>
+                  {u.papel === "operador" && (
+                    <button
+                      onClick={() => setCarreiraAberta(carreiraAberta === u.id ? null : u.id)}
+                      className="text-xs font-medium underline"
+                      style={{ color: "var(--color-marca)" }}
+                    >
+                      {carreiraAberta === u.id ? "fechar carreira" : "ver carreira"}
+                    </button>
+                  )}
+                </div>
+              </div>
+              {carreiraAberta === u.id && (
+                <div className="mt-3">
+                  <Carreira endpoint={`/api/admin/usuarios/${u.id}/carreira`} podeEditar />
+                </div>
+              )}
             </div>
           ))}
           {usuarios.length === 0 && (

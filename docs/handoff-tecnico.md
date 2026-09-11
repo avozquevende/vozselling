@@ -122,6 +122,26 @@ Vocabulário do método (manual oficial): o funil do próprio Filippe é Adiçã
 - `daily-limits.ts` — freios de volume.
 - `comentarios.ts` — automático por faixa de nota.
 - `buscar-perfil.ts` — raspagem via Apify (módulo Dream Pickup).
+- `carreira.ts` — escada de carreira do Social Seller (seção 06.1 abaixo).
+
+### 06.1 — Escada de carreira (`carreira.ts`)
+
+Do manual "Método VOZ SELLING™", capítulo 9: executor → intérprete → gestor → expert
+(`usuarios.nivel_carreira`). Métricas semanais (abordagens, sessões agendadas via
+etapa de papel `encerra`, % de resposta, tempo médio de resposta) são calculadas
+só sobre `leads.responsavel_id` — um lead precisa estar atribuído a um operador
+(seletor no Pipeline) para contar na carreira dele. Sem atribuição, métrica zerada
+— nunca mistura o trabalho de duas pessoas do mesmo workspace.
+
+`avaliarSinalizacaoPromocao` compara com as metas do manual (150-200 abordagens/semana,
+10-15 sessões, ≥40% resposta, <4h tempo de resposta) e só **sinaliza** — a promoção em
+si (`definirNivel`) é sempre uma ação humana do admin, registrada em `nivel_eventos`
+para auditoria. Não existe conversão sessão→venda aqui: esta instância não tem
+conceito de venda/pagamento no banco (uso interno, sem cobrança).
+
+Telas: `/social/carreira` (o operador vê a própria carreira, sem editar) e
+`/admin/workspaces/[id]` → "ver carreira" por operador (admin promove/rebaixa).
+Componente compartilhado: `dr/Carreira.tsx`.
 
 ## 08 — Serviços externos
 

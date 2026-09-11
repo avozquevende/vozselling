@@ -14,6 +14,8 @@ export interface LeadPainel {
   mensagens_robo_count: number;
   ultimo_falante: "lead" | "robo" | "operador" | null;
   atualizado_em: string;
+  responsavel_id: number | null;
+  responsavel_nome: string | null;
   etapa_id: number | null;
   etapa_nome: string | null;
   etapa_papel: Papel | null;

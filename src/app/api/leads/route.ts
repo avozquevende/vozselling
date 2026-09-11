@@ -16,9 +16,11 @@ export async function GET(request: NextRequest) {
       .prepare(
         `SELECT l.id, l.instagram_username, l.nome, l.nota, l.motivo_nota, l.concorrente,
                 l.motivo_parada, l.mensagens_robo_count, l.ultimo_falante, l.atualizado_em,
+                l.responsavel_id, u.nome AS responsavel_nome,
                 e.id AS etapa_id, e.nome AS etapa_nome, e.papel AS etapa_papel
          FROM leads l
          LEFT JOIN etapas e ON e.id = l.etapa_id
+         LEFT JOIN usuarios u ON u.id = l.responsavel_id
          WHERE l.workspace_id = ?
          ORDER BY l.atualizado_em DESC`,
       )

@@ -3,21 +3,30 @@
 import { useEffect, useState } from "react";
 import type { EtapaPainel, LeadPainel } from "./tipos";
 
+interface Colega {
+  id: number;
+  nome: string;
+}
+
 export function Pipeline({ workspaceId }: { workspaceId: number }) {
   const [leads, setLeads] = useState<LeadPainel[]>([]);
   const [etapas, setEtapas] = useState<EtapaPainel[]>([]);
+  const [colegas, setColegas] = useState<Colega[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   async function carregar() {
     setCarregando(true);
-    const [respLeads, respEtapas] = await Promise.all([
+    const [respLeads, respEtapas, respColegas] = await Promise.all([
       fetch(`/api/leads?workspaceId=${workspaceId}`),
       fetch(`/api/etapas?workspaceId=${workspaceId}`),
+      fetch(`/api/usuarios/colegas?workspaceId=${workspaceId}`),
     ]);
     const { leads } = (await respLeads.json()) as { leads: LeadPainel[] };
     const { etapas } = (await respEtapas.json()) as { etapas: EtapaPainel[] };
+    const { usuarios } = (await respColegas.json()) as { usuarios: Colega[] };
     setLeads(leads);
     setEtapas(etapas.filter((e) => e.papel !== "fila").sort((a, b) => a.ordem - b.ordem));
+    setColegas(usuarios);
     setCarregando(false);
   }
 
@@ -31,6 +40,15 @@ export function Pipeline({ workspaceId }: { workspaceId: number }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ leadId, etapaId }),
+    });
+    carregar();
+  }
+
+  async function atribuir(leadId: number, responsavelId: number | null) {
+    await fetch(`/api/leads/${leadId}/responsavel`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ responsavelId }),
     });
     carregar();
   }
@@ -73,6 +91,21 @@ export function Pipeline({ workspaceId }: { workspaceId: number }) {
                     {etapas.map((op) => (
                       <option key={op.id} value={op.id} style={{ color: "black" }}>
                         {op.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="mt-1 w-full rounded border bg-transparent p-1 text-xs"
+                    style={{ borderColor: "var(--color-borda)" }}
+                    value={lead.responsavel_id ?? ""}
+                    onChange={(e) => atribuir(lead.id, e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="" style={{ color: "black" }}>
+                      Sem responsável
+                    </option>
+                    {colegas.map((c) => (
+                      <option key={c.id} value={c.id} style={{ color: "black" }}>
+                        {c.nome}
                       </option>
                     ))}
                   </select>
