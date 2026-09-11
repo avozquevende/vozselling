@@ -147,6 +147,34 @@ Componente compartilhado: `dr/Carreira.tsx`.
 
 Credenciais nunca neste doc. Chaves, tokens e senhas ficam no `.env.local` do servidor e no gerenciador de senhas. Acesso SSH e convite ao painel da Meta são passados por canal separado.
 
+### 08.1 — Conectando uma conta do Instagram (passo a passo)
+
+Conta profissional (Business/Creator) — conta pessoal não conecta. O fluxo de OAuth já está pronto no código (`instagram-oauth.ts`, `/api/instagram/conectar`, `/api/auth/instagram/callback`); o que falta em uma instância nova é sempre configuração do lado da Meta.
+
+**1) Criar o app na Meta (uma vez só, por instância)**
+1. Em [developers.facebook.com](https://developers.facebook.com), crie um app com o produto **Instagram API with Instagram Login** (login direto pela conta do Instagram, sem precisar de Página do Facebook).
+2. Anote o **App ID** e o **App Secret**.
+3. Scopes que o app precisa aprovar — já são exatamente os que `gerarUrlAutorizacao` pede: `instagram_business_basic`, `instagram_business_manage_messages`, `instagram_business_manage_comments`.
+4. Configure o **Webhook** do app: URL `https://SEU-DOMINIO/api/webhooks/instagram`, com um verify token de sua escolha (precisa bater com `IG_WEBHOOK_VERIFY_TOKEN` no passo 2).
+5. Sem **App Review** aprovado pela Meta, só contas marcadas como **testadoras** dentro do app conseguem conectar. Pra testar agora, adiciona a conta que vai usar como testadora — aí conecta e funciona de verdade sem esperar o review.
+
+**2) Variáveis de ambiente (Vercel → Settings → Environment Variables, ou `.env.local` na VPS)**
+```
+IG_APP_ID=<App ID do passo 1>
+IG_APP_SECRET=<App Secret do passo 1>
+IG_REDIRECT_URI=https://SEU-DOMINIO/api/auth/instagram/callback
+IG_WEBHOOK_VERIFY_TOKEN=<o mesmo token colocado no webhook>
+```
+Env var nova só entra depois de um redeploy.
+
+**3) Conectar dentro do Voz Selling**
+1. Login como admin → `/admin/workspaces/[id]` (o workspace de quem vai usar essa conta).
+2. Botão **"Conectar Instagram"** → autoriza no Instagram → volta pelo callback, que já salva o token em `contas_instagram` sozinho.
+3. Confirma em `/admin/workspaces/[id]` que aparece "Conectado como @usuario".
+
+**4) Depois de conectado**
+Nada mais precisa ser configurado — assim que os crons `piloto`/`retomada` estiverem rodando (Vercel Cron ou o agendador da VPS), o robô já responde os DMs usando o conteúdo de `/admin/metodologia`. Token dura ~60 dias e renova sozinho.
+
 ## 09 — Armadilhas conhecidas
 
 1. **Migração de schema não roda sozinha.** A conexão fica em cache no `globalThis`. `ALTER TABLE` novo em `db.ts` só roda depois de reiniciar o processo.
