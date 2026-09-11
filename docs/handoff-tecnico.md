@@ -173,7 +173,17 @@ Env var nova só entra depois de um redeploy.
 3. Confirma em `/admin/workspaces/[id]` que aparece "Conectado como @usuario".
 
 **4) Depois de conectado**
-Nada mais precisa ser configurado — assim que os crons `piloto`/`retomada` estiverem rodando (Vercel Cron ou o agendador da VPS), o robô já responde os DMs usando o conteúdo de `/admin/metodologia`. Token dura ~60 dias e renova sozinho.
+Nada mais precisa ser configurado — assim que os crons `piloto`/`retomada` estiverem rodando, o robô já responde os DMs usando o conteúdo de `/admin/metodologia`. Token dura ~60 dias e renova sozinho.
+
+### 08.2 — Disparando os crons no Vercel
+
+Na VPS, o crontab chama `/api/cron/piloto` a cada minuto e `/api/cron/retomada` em lotes (seção 04). No Vercel isso não existe pronto, e o plano Hobby do Vercel Cron só permite 1x/dia — não serve pra responder DM em poucos minutos.
+
+Solução: `.github/workflows/crons.yml`, já no repositório. Roda no GitHub Actions (grátis) e chama os dois endpoints via `curl` com o header `x-cron-secret`. Só precisa de 2 segredos no GitHub (Settings → Secrets and variables → Actions):
+- `VOZ_SELLING_URL` — a URL de produção (sem barra no final).
+- `CRON_SECRET` — o mesmo valor configurado no Vercel.
+
+Sem esses segredos, o workflow roda mas falha na chamada (401). O agendamento do GitHub Actions tem folga de alguns minutos (não é ao segundo) — normal, não é bug.
 
 ## 09 — Armadilhas conhecidas
 

@@ -1,0 +1,35 @@
+name: Crons do robô (piloto + retomada)
+
+# O Vercel Hobby só permite cron 1x/dia — não dá pra responder DM em minutos
+# assim. Este workflow substitui o crontab da VPS (handoff, seção 04) quando
+# a instância está rodando no Vercel: bate nos dois endpoints de cron
+# periodicamente, autenticado pelo mesmo CRON_SECRET.
+#
+# Precisa de 2 segredos no repositório (Settings → Secrets and variables →
+# Actions): VOZ_SELLING_URL (ex: https://seu-projeto.vercel.app, sem barra
+# no final) e CRON_SECRET (o mesmo valor configurado no Vercel).
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  piloto:
+    if: github.event.schedule == '*/5 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar /api/cron/piloto
+        run: |
+          curl -sS -f -X POST "${{ secrets.VOZ_SELLING_URL }}/api/cron/piloto" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
+
+  retomada:
+    if: github.event.schedule == '*/15 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar /api/cron/retomada
+        run: |
+          curl -sS -f -X POST "${{ secrets.VOZ_SELLING_URL }}/api/cron/retomada" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
