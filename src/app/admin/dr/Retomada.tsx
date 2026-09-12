@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import type { ItemRetomadaPainel } from "./tipos";
 import { BTN_PRIMARIO_MIUDO } from "@/app/components/classes-botao";
 
-export function Retomada({ workspaceId }: { workspaceId: number }) {
+// workspaceId omitido = visão global do admin (todos os clientes juntos).
+export function Retomada({ workspaceId }: { workspaceId?: number }) {
   const [itens, setItens] = useState<ItemRetomadaPainel[]>([]);
   const [processando, setProcessando] = useState<number | null>(null);
   const [ultimoTexto, setUltimoTexto] = useState<string | null>(null);
@@ -12,7 +13,8 @@ export function Retomada({ workspaceId }: { workspaceId: number }) {
 
   async function carregar() {
     setCarregando(true);
-    const resp = await fetch(`/api/retomada?workspaceId=${workspaceId}`);
+    const qs = workspaceId ? `?workspaceId=${workspaceId}` : "";
+    const resp = await fetch(`/api/retomada${qs}`);
     const { prontos } = (await resp.json()) as { prontos: ItemRetomadaPainel[] };
     setItens(prontos);
     setCarregando(false);
@@ -54,9 +56,12 @@ export function Retomada({ workspaceId }: { workspaceId: number }) {
         {itens.map((item) => (
           <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
             <div>
-              <p className="text-sm font-medium">{item.escada.replaceAll("_", " ")}</p>
+              <p className="text-sm font-medium">
+                {item.escada.replaceAll("_", " ")}
+                {item.workspace_nome && <span className="ml-2 eyebrow text-accent">{item.workspace_nome}</span>}
+              </p>
               <p className="text-xs text-muted mt-0.5">
-                passo {item.passo}/7 · lead #{item.lead_id}
+                passo {item.passo}/7 · {item.instagram_username ? `@${item.instagram_username}` : `lead #${item.lead_id}`}
               </p>
             </div>
             <button

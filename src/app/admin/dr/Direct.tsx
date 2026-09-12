@@ -5,8 +5,9 @@ import type { LeadPainel } from "./tipos";
 import { BTN_PRIMARIO_MIUDO } from "@/app/components/classes-botao";
 
 // Fila do piloto: leads em etapa "conduz" onde quem falou por último foi o
-// lead — é a vez do robô responder, dentro da janela de 24h.
-export function Direct({ workspaceId }: { workspaceId: number }) {
+// lead — é a vez do robô responder, dentro da janela de 24h. workspaceId
+// omitido = visão global do admin (todos os clientes juntos).
+export function Direct({ workspaceId }: { workspaceId?: number }) {
   const [leads, setLeads] = useState<LeadPainel[]>([]);
   const [gerando, setGerando] = useState<number | null>(null);
   const [ultimaMensagem, setUltimaMensagem] = useState<{ leadId: number; texto: string } | null>(
@@ -16,7 +17,8 @@ export function Direct({ workspaceId }: { workspaceId: number }) {
 
   async function carregar() {
     setCarregando(true);
-    const resp = await fetch(`/api/leads?workspaceId=${workspaceId}`);
+    const qs = workspaceId ? `?workspaceId=${workspaceId}` : "";
+    const resp = await fetch(`/api/leads${qs}`);
     const { leads } = (await resp.json()) as { leads: LeadPainel[] };
     setLeads(leads.filter((l) => l.etapa_papel === "conduz" && l.ultimo_falante === "lead"));
     setCarregando(false);
@@ -51,7 +53,10 @@ export function Direct({ workspaceId }: { workspaceId: number }) {
       {leads.map((lead) => (
         <div key={lead.id} className="px-5 py-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-sm font-medium">@{lead.instagram_username}</p>
+            <p className="text-sm font-medium">
+              @{lead.instagram_username}
+              {lead.workspace_nome && <span className="ml-2 eyebrow text-accent">{lead.workspace_nome}</span>}
+            </p>
             <button
               onClick={() => gerarResposta(lead.id)}
               disabled={gerando === lead.id}

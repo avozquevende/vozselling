@@ -2,21 +2,54 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, KeyRound, BookOpen } from "lucide-react";
+import {
+  LayoutDashboard,
+  Columns3,
+  ListOrdered,
+  MessagesSquare,
+  RotateCcw,
+  Users,
+  KeyRound,
+  BookOpen,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UserChip } from "../user-chip";
 import { LogoCompact } from "../components/logo";
 
 type Item = { href: string; label: string; icon: React.ReactNode; exact?: boolean };
+type Group = { title: string | null; items: Item[] };
 
 const ICO = { size: 16, strokeWidth: 1.75 } as const;
 
-const ITEMS: Item[] = [
-  { href: "/admin", label: "Painel", icon: <LayoutDashboard {...ICO} />, exact: true },
-  { href: "/admin/workspaces", label: "Clientes", icon: <Users {...ICO} /> },
-  { href: "/admin/usuarios", label: "Acessos", icon: <KeyRound {...ICO} /> },
-  { href: "/admin/metodologia", label: "Metodologia", icon: <BookOpen {...ICO} /> },
+const GROUPS: Group[] = [
+  {
+    title: null,
+    items: [{ href: "/admin", label: "Painel", icon: <LayoutDashboard {...ICO} />, exact: true }],
+  },
+  {
+    title: "Dream Social",
+    items: [
+      { href: "/admin/pipeline", label: "Pipeline", icon: <Columns3 {...ICO} /> },
+      { href: "/admin/ranking", label: "Ranking", icon: <ListOrdered {...ICO} /> },
+      { href: "/admin/direct", label: "Direct", icon: <MessagesSquare {...ICO} /> },
+      { href: "/admin/retomada", label: "Retomada", icon: <RotateCcw {...ICO} /> },
+    ],
+  },
+  {
+    title: "Empresa",
+    items: [
+      { href: "/admin/workspaces", label: "Clientes", icon: <Users {...ICO} /> },
+      { href: "/admin/usuarios", label: "Acessos", icon: <KeyRound {...ICO} /> },
+      { href: "/admin/metodologia", label: "Metodologia", icon: <BookOpen {...ICO} /> },
+    ],
+  },
 ];
+
+const CHEVRON_UP = (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 9.75 8 5.75l4 4" />
+  </svg>
+);
 
 const MENU_ICON = (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden="true">
@@ -30,27 +63,63 @@ const CLOSE_ICON = (
   </svg>
 );
 
+function NavGroup({
+  group,
+  pathname,
+  onNavigate,
+}: {
+  group: Group;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="mb-2">
+      {group.title && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="w-full flex items-center justify-between px-3 min-h-11 eyebrow text-accent hover:text-accentink"
+        >
+          {group.title}
+          <span className={`transition-transform motion-reduce:transition-none ${open ? "" : "rotate-180"}`}>
+            {CHEVRON_UP}
+          </span>
+        </button>
+      )}
+      {open && (
+        <div className={`flex flex-col gap-0.5 ${group.title ? "border-l border-line ml-3 pl-1.5" : ""}`}>
+          {group.items.map((item) => {
+            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                className={`flex items-center gap-2.5 px-3 min-h-11 text-sm rounded-lg transition-colors motion-reduce:transition-none ${
+                  active ? "bg-surface2 text-accentink font-semibold" : "text-muted hover:text-ink hover:bg-surface2/60"
+                }`}
+              >
+                <span className={active ? "text-accent" : "text-steel"}>{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Nav({ onNavigate }: { onNavigate?: () => void } = {}) {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-col gap-0.5 px-3 py-4">
-      {ITEMS.map((item) => {
-        const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-2.5 px-3 min-h-11 text-sm rounded-lg transition-colors motion-reduce:transition-none ${
-              active ? "bg-surface2 text-accentink font-semibold" : "text-muted hover:text-ink hover:bg-surface2/60"
-            }`}
-          >
-            <span className={active ? "text-accent" : "text-steel"}>{item.icon}</span>
-            {item.label}
-          </Link>
-        );
-      })}
+    <nav className="flex flex-col px-3 py-4">
+      {GROUPS.map((g, i) => (
+        <NavGroup key={i} group={g} pathname={pathname} onNavigate={onNavigate} />
+      ))}
     </nav>
   );
 }

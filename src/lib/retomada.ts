@@ -84,6 +84,10 @@ export interface ItemRetomada {
   escada: Escada;
   passo: number;
   proximo_toque_em: string;
+  /** Só vem preenchido na visão global do admin (todos os clientes juntos). */
+  workspace_id?: number;
+  workspace_nome?: string;
+  instagram_username?: string;
 }
 
 /** Zera qualquer retomada ativa do lead e começa uma nova escada do passo 1. */
@@ -162,6 +166,25 @@ export async function buscarProntosParaToque(workspaceId: number): Promise<ItemR
        ORDER BY r.proximo_toque_em ASC`,
     )
     .all<ItemRetomada>(workspaceId);
+}
+
+/** Mesma consulta de buscarProntosParaToque, sem o filtro de workspace — alimenta a visão global do admin. */
+export async function buscarProntosParaToqueGlobal(): Promise<ItemRetomada[]> {
+  const db = await getDb();
+  return db
+    .prepare(
+      `SELECT r.id, r.lead_id, l.instagram_scoped_id, l.instagram_username, r.escada, r.passo, r.proximo_toque_em,
+              l.workspace_id, w.nome AS workspace_nome
+       FROM retomada_fila r
+       JOIN leads l ON l.id = r.lead_id
+       JOIN workspaces w ON w.id = l.workspace_id
+       WHERE r.ativo = 1
+         AND COALESCE(l.piloto_desativado, 0) = 0
+         AND COALESCE(w.automacao_pausada, 0) = 0
+         AND r.proximo_toque_em <= datetime('now','localtime')
+       ORDER BY r.proximo_toque_em ASC`,
+    )
+    .all<ItemRetomada>();
 }
 
 /**

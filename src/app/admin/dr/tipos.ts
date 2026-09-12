@@ -19,6 +19,9 @@ export interface LeadPainel {
   etapa_id: number | null;
   etapa_nome: string | null;
   etapa_papel: Papel | null;
+  /** Só vem preenchido na visão global do admin (todos os clientes juntos). */
+  workspace_id?: number;
+  workspace_nome?: string;
 }
 
 export interface EtapaPainel {
@@ -35,4 +38,8 @@ export interface ItemRetomadaPainel {
   escada: string;
   passo: number;
   proximo_toque_em: string;
+  instagram_username?: string;
+  /** Só vem preenchido na visão global do admin (todos os clientes juntos). */
+  workspace_id?: number;
+  workspace_nome?: string;
 }

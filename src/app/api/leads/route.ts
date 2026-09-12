@@ -8,6 +8,29 @@ export async function GET(request: NextRequest) {
   try {
     const usuario = await requireApiUser();
     const workspaceIdParam = request.nextUrl.searchParams.get("workspaceId");
+
+    // Admin sem workspaceId pede a visão global (todos os clientes juntos) —
+    // é o que alimenta /admin/ranking, /admin/pipeline etc. Operador sempre
+    // cai no próprio workspace.
+    if (!workspaceIdParam && usuario.papel === "admin") {
+      const db = await getDb();
+      const leads = await db
+        .prepare(
+          `SELECT l.id, l.instagram_username, l.nome, l.nota, l.motivo_nota, l.concorrente,
+                  l.motivo_parada, l.mensagens_robo_count, l.ultimo_falante, l.atualizado_em,
+                  l.responsavel_id, u.nome AS responsavel_nome,
+                  e.id AS etapa_id, e.nome AS etapa_nome, e.papel AS etapa_papel,
+                  l.workspace_id, w.nome AS workspace_nome
+           FROM leads l
+           LEFT JOIN etapas e ON e.id = l.etapa_id
+           LEFT JOIN usuarios u ON u.id = l.responsavel_id
+           JOIN workspaces w ON w.id = l.workspace_id
+           ORDER BY l.atualizado_em DESC`,
+        )
+        .all();
+      return NextResponse.json({ leads });
+    }
+
     const workspaceId = workspaceIdParam ? Number(workspaceIdParam) : usuario.workspace_id;
     if (!workspaceId) throw new ErroApi(400, "workspaceId é obrigatório.");
     requireWorkspaceAccess(usuario, workspaceId);
