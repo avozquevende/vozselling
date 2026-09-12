@@ -6,7 +6,7 @@ import { erroParaResposta } from "@/lib/api-utils";
 export async function GET() {
   try {
     await requireAdmin();
-    return NextResponse.json({ secoes: listarSecoes() });
+    return NextResponse.json({ secoes: await listarSecoes() });
   } catch (err) {
     return erroParaResposta(err);
   }

@@ -44,9 +44,9 @@ export interface LeadNaFila {
  * janela de 24h da Meta, e onde quem falou por último foi o lead — é a vez
  * do robô responder.
  */
-export function buscarFilaDoPiloto(workspaceId: number): LeadNaFila[] {
-  const db = getDb();
-  const rows = db
+export async function buscarFilaDoPiloto(workspaceId: number): Promise<LeadNaFila[]> {
+  const db = await getDb();
+  return db
     .prepare(
       `SELECT l.id, l.workspace_id, l.etapa_id, l.instagram_username, l.instagram_scoped_id, l.nome,
               l.mensagens_robo_count, l.janela_24h_expira_em
@@ -58,24 +58,21 @@ export function buscarFilaDoPiloto(workspaceId: number): LeadNaFila[] {
          AND (l.janela_24h_expira_em IS NULL OR l.janela_24h_expira_em > datetime('now','localtime'))
        ORDER BY l.atualizado_em ASC`,
     )
-    .all(workspaceId);
-  return rows as LeadNaFila[];
+    .all<LeadNaFila>(workspaceId);
 }
 
-export function leadEstaNaJanela24h(lead: LeadNaFila): boolean {
+export async function leadEstaNaJanela24h(lead: LeadNaFila): Promise<boolean> {
   if (!lead.janela_24h_expira_em) return false;
-  const db = getDb();
-  const row = db
-    .prepare(
-      "SELECT (?) > datetime('now','localtime') AS dentro",
-    )
-    .get(lead.janela_24h_expira_em) as { dentro: number };
-  return row.dentro === 1;
+  const db = await getDb();
+  const row = await db
+    .prepare("SELECT (?) > datetime('now','localtime') AS dentro")
+    .get<{ dentro: number }>(lead.janela_24h_expira_em);
+  return row?.dentro === 1;
 }
 
 /** Confere que a etapa atual do lead realmente autoriza o robô a falar. */
-export function roboAutorizadoNaEtapa(etapaId: number): boolean {
-  const etapa = etapaPorId(etapaId);
+export async function roboAutorizadoNaEtapa(etapaId: number): Promise<boolean> {
+  const etapa = await etapaPorId(etapaId);
   if (!etapa) return false;
   return roboPodeFalar(etapa.papel);
 }

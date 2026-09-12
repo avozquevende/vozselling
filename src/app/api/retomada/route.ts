@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     if (!workspaceId) throw new ErroApi(400, "workspaceId é obrigatório.");
     requireWorkspaceAccess(usuario, workspaceId);
 
-    const prontos = buscarProntosParaToque(workspaceId);
+    const prontos = await buscarProntosParaToque(workspaceId);
     return NextResponse.json({ prontos });
   } catch (err) {
     return erroParaResposta(err);

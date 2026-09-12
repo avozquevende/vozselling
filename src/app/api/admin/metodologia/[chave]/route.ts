@@ -10,7 +10,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = (await request.json()) as { conteudo?: string };
     if (body.conteudo === undefined) throw new ErroApi(400, "conteudo é obrigatório.");
 
-    salvarSecao(chave, body.conteudo);
+    await salvarSecao(chave, body.conteudo);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return erroParaResposta(err);

@@ -7,32 +7,31 @@ import { contaPorWorkspace, type ContaInstagram } from "./instagram-contas";
 // webhook (src/app/api/webhooks/instagram) a cada DM nova. É o que alimenta
 // a fila do piloto (ultimo_falante='lead' + janela_24h_expira_em).
 
-function buscarLeadPorIgsid(workspaceId: number, igsid: string): number | undefined {
-  const row = getDb()
+async function buscarLeadPorIgsid(workspaceId: number, igsid: string): Promise<number | undefined> {
+  const db = await getDb();
+  const row = await db
     .prepare("SELECT id FROM leads WHERE workspace_id = ? AND instagram_scoped_id = ?")
-    .get(workspaceId, igsid) as { id: number } | undefined;
+    .get<{ id: number }>(workspaceId, igsid);
   return row?.id;
 }
 
 /** Só chamado quando o IGSID ainda não tem lead — resolve o username antes. */
-function encontrarOuCriarLead(conta: ContaInstagram, igsid: string, username: string): number {
-  const db = getDb();
+async function encontrarOuCriarLead(conta: ContaInstagram, igsid: string, username: string): Promise<number> {
+  const db = await getDb();
 
   // Pode já existir um lead criado manualmente (ex: via Ranking) sem o
   // IGSID ainda resolvido — backfilla em vez de duplicar.
-  const existentePorUsername = db
+  const existentePorUsername = await db
     .prepare("SELECT id FROM leads WHERE workspace_id = ? AND instagram_username = ?")
-    .get(conta.workspace_id, username) as { id: number } | undefined;
+    .get<{ id: number }>(conta.workspace_id, username);
   if (existentePorUsername) {
-    db.prepare("UPDATE leads SET instagram_scoped_id = ? WHERE id = ?").run(
-      igsid,
-      existentePorUsername.id,
-    );
+    await db.prepare("UPDATE leads SET instagram_scoped_id = ? WHERE id = ?").run(igsid, existentePorUsername.id);
     return existentePorUsername.id;
   }
 
-  const etapaFila = garantirEtapasPadrao(conta.workspace_id).find((e) => e.papel === "fila");
-  const resultado = db
+  const etapas = await garantirEtapasPadrao(conta.workspace_id);
+  const etapaFila = etapas.find((e) => e.papel === "fila");
+  const resultado = await db
     .prepare(
       `INSERT INTO leads (workspace_id, etapa_id, instagram_username, instagram_scoped_id)
        VALUES (?, ?, ?, ?)`,
@@ -53,7 +52,7 @@ export async function enviarParaLead(
   texto: string,
 ): Promise<void> {
   if (!instagramScopedId) return; // lead nunca mandou DM — não tem pra quem enviar ainda
-  const conta = contaPorWorkspace(workspaceId);
+  const conta = await contaPorWorkspace(workspaceId);
   if (!conta) return;
   await enviarMensagemDireta(conta.access_token, conta.instagram_business_id, instagramScopedId, texto);
 }
@@ -63,25 +62,22 @@ export async function processarMensagemRecebida(
   igsid: string,
   texto: string,
 ): Promise<void> {
-  const db = getDb();
-  let leadId = buscarLeadPorIgsid(conta.workspace_id, igsid);
+  const db = await getDb();
+  let leadId = await buscarLeadPorIgsid(conta.workspace_id, igsid);
   if (leadId === undefined) {
     const username = await buscarUsername(conta.access_token, igsid);
-    leadId = encontrarOuCriarLead(conta, igsid, username);
+    leadId = await encontrarOuCriarLead(conta, igsid, username);
   }
 
-  const transacao = db.transaction(() => {
-    db.prepare("INSERT INTO mensagens (lead_id, remetente, texto) VALUES (?, 'lead', ?)").run(
-      leadId,
-      texto,
-    );
-    db.prepare(
-      `UPDATE leads
-       SET ultimo_falante = 'lead',
-           janela_24h_expira_em = datetime('now','localtime','+24 hours'),
-           atualizado_em = datetime('now','localtime')
-       WHERE id = ?`,
-    ).run(leadId);
-  });
-  transacao();
+  await db.transaction([
+    { sql: "INSERT INTO mensagens (lead_id, remetente, texto) VALUES (?, 'lead', ?)", args: [leadId, texto] },
+    {
+      sql: `UPDATE leads
+            SET ultimo_falante = 'lead',
+                janela_24h_expira_em = datetime('now','localtime','+24 hours'),
+                atualizado_em = datetime('now','localtime')
+            WHERE id = ?`,
+      args: [leadId],
+    },
+  ]);
 }

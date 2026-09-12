@@ -37,46 +37,41 @@ export const SECOES_PADRAO: Array<{ chave: string; titulo: string }> = [
  * conteúdo extraído das aulas (metodologia-seed.ts) quando houver. Só
  * preenche na criação — nunca sobrescreve edição feita depois pela tela.
  */
-export function garantirSecoesPadrao(): void {
-  const db = getDb();
-  const inserir = db.prepare(
-    `INSERT INTO metodologia (chave, titulo, conteudo) VALUES (?, ?, ?)
-     ON CONFLICT(chave) DO NOTHING`,
+export async function garantirSecoesPadrao(): Promise<void> {
+  const db = await getDb();
+  await db.transaction(
+    SECOES_PADRAO.map((secao) => ({
+      sql: `INSERT INTO metodologia (chave, titulo, conteudo) VALUES (?, ?, ?)
+            ON CONFLICT(chave) DO NOTHING`,
+      args: [secao.chave, secao.titulo, SEED_METODOLOGIA[secao.chave] ?? ""],
+    })),
   );
-  const transacao = db.transaction(() => {
-    for (const secao of SECOES_PADRAO) {
-      inserir.run(secao.chave, secao.titulo, SEED_METODOLOGIA[secao.chave] ?? "");
-    }
-  });
-  transacao();
 }
 
-export function listarSecoes(): SecaoMetodologia[] {
-  garantirSecoesPadrao();
-  return getDb().prepare("SELECT * FROM metodologia ORDER BY rowid ASC").all() as SecaoMetodologia[];
+export async function listarSecoes(): Promise<SecaoMetodologia[]> {
+  await garantirSecoesPadrao();
+  const db = await getDb();
+  return db.prepare("SELECT * FROM metodologia ORDER BY rowid ASC").all<SecaoMetodologia>();
 }
 
 /** Retorna '' quando a seção ainda não tem conteúdo — chamar sempre é seguro. */
-export function buscarSecao(chave: string): string {
-  const row = getDb().prepare("SELECT conteudo FROM metodologia WHERE chave = ?").get(chave) as
-    | { conteudo: string }
-    | undefined;
+export async function buscarSecao(chave: string): Promise<string> {
+  const db = await getDb();
+  const row = await db.prepare("SELECT conteudo FROM metodologia WHERE chave = ?").get<{ conteudo: string }>(chave);
   return row?.conteudo ?? "";
 }
 
-export function salvarSecao(chave: string, conteudo: string): void {
-  const db = getDb();
-  const existente = db.prepare("SELECT chave FROM metodologia WHERE chave = ?").get(chave);
+export async function salvarSecao(chave: string, conteudo: string): Promise<void> {
+  const db = await getDb();
+  const existente = await db.prepare("SELECT chave FROM metodologia WHERE chave = ?").get(chave);
   if (!existente) {
     const titulo = SECOES_PADRAO.find((s) => s.chave === chave)?.titulo ?? chave;
-    db.prepare("INSERT INTO metodologia (chave, titulo, conteudo) VALUES (?, ?, ?)").run(
-      chave,
-      titulo,
-      conteudo,
-    );
+    await db
+      .prepare("INSERT INTO metodologia (chave, titulo, conteudo) VALUES (?, ?, ?)")
+      .run(chave, titulo, conteudo);
     return;
   }
-  db.prepare(
-    "UPDATE metodologia SET conteudo = ?, atualizado_em = datetime('now','localtime') WHERE chave = ?",
-  ).run(conteudo, chave);
+  await db
+    .prepare("UPDATE metodologia SET conteudo = ?, atualizado_em = datetime('now','localtime') WHERE chave = ?")
+    .run(conteudo, chave);
 }

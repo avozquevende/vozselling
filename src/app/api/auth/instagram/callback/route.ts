@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       // Segue sem username resolvido — não impede salvar a conexão.
     }
 
-    salvarConta(workspaceId, {
+    await salvarConta(workspaceId, {
       instagramBusinessId: token.instagramUserId,
       instagramUsername,
       accessToken: token.accessToken,

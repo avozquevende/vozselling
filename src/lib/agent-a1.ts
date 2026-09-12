@@ -59,7 +59,7 @@ export interface ResultadoAnalise {
 // classificarNota() também aplica em código, então os dois precisam bater).
 // O que o método do Filippe acrescenta (buscarSecao) é a camada de cima:
 // como ler os sinais, o que pesa mais, os exemplos — não a régua em si.
-function montarSistema(): string {
+async function montarSistema(): Promise<string> {
   const base = `Você analisa perfis do Instagram para qualificar leads de vendas.
 Responda SEMPRE em JSON puro, sem markdown, no formato:
 {"nota": <0 a 100>, "motivo": "<uma frase curta e concreta>", "concorrente": <true|false>}
@@ -73,7 +73,8 @@ Faixas (regra fixa, não muda):
 - A mensagem direta (quando existir) diz mais sobre intenção do que a bio — pese mais nela.
 - Bio profissional e público idêntico ao ICP não são, sozinhos, sinal de nota alta: também é a cara de um concorrente do mesmo mercado. Marque "concorrente": true quando o perfil parecer alguém que vende o mesmo tipo de coisa, não alguém que compraria.`;
 
-  const partesMetodo = [buscarSecao("qualificacao"), buscarSecao("tom_de_voz")].filter(Boolean);
+  const [qualificacao, tomDeVoz] = await Promise.all([buscarSecao("qualificacao"), buscarSecao("tom_de_voz")]);
+  const partesMetodo = [qualificacao, tomDeVoz].filter(Boolean);
   if (partesMetodo.length === 0) return base;
 
   return `${base}\n\n--- Como qualificar, segundo o método (aplique junto com as faixas acima) ---\n${partesMetodo.join("\n\n")}`;
@@ -95,7 +96,7 @@ export async function analisarLead(dados: DadosParaAnalise): Promise<ResultadoAn
   const modelo = process.env.A1_MODEL ?? "gpt-4o-mini";
   const resposta = await gerarTexto({
     modelo,
-    sistema: montarSistema(),
+    sistema: await montarSistema(),
     prompt: montarPrompt(dados),
     temperatura: 0.2,
   });
@@ -120,23 +121,23 @@ function extrairJson(texto: string): { nota?: number; motivo?: string; concorren
  * de volta no lead — é o que a tela de Ranking dispara.
  */
 export async function analisarEQualificarLead(leadId: number): Promise<ResultadoAnalise> {
-  const db = getDb();
+  const db = await getDb();
 
-  const lead = db
+  const lead = await db
     .prepare(
       `SELECT l.id, l.workspace_id, w.icp, w.ofertas
        FROM leads l
        JOIN workspaces w ON w.id = l.workspace_id
        WHERE l.id = ?`,
     )
-    .get(leadId) as { id: number; workspace_id: number; icp: string; ofertas: string } | undefined;
+    .get<{ id: number; workspace_id: number; icp: string; ofertas: string }>(leadId);
   if (!lead) throw new Error(`Lead ${leadId} não encontrado.`);
 
-  const ultimaMensagem = db
+  const ultimaMensagem = await db
     .prepare(
       "SELECT texto FROM mensagens WHERE lead_id = ? AND remetente = 'lead' ORDER BY criado_em DESC LIMIT 1",
     )
-    .get(leadId) as { texto: string } | undefined;
+    .get<{ texto: string }>(leadId);
 
   const resultado = await analisarLead({
     icp: lead.icp,
@@ -144,11 +145,13 @@ export async function analisarEQualificarLead(leadId: number): Promise<Resultado
     mensagemDireta: ultimaMensagem?.texto,
   });
 
-  db.prepare(
-    `UPDATE leads
-     SET nota = ?, motivo_nota = ?, concorrente = ?, atualizado_em = datetime('now','localtime')
-     WHERE id = ?`,
-  ).run(resultado.nota, resultado.motivo, resultado.concorrente ? 1 : 0, leadId);
+  await db
+    .prepare(
+      `UPDATE leads
+       SET nota = ?, motivo_nota = ?, concorrente = ?, atualizado_em = datetime('now','localtime')
+       WHERE id = ?`,
+    )
+    .run(resultado.nota, resultado.motivo, resultado.concorrente ? 1 : 0, leadId);
 
   return resultado;
 }

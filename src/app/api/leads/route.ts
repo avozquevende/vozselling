@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     if (!workspaceId) throw new ErroApi(400, "workspaceId é obrigatório.");
     requireWorkspaceAccess(usuario, workspaceId);
 
-    const leads = getDb()
+    const db = await getDb();
+    const leads = await db
       .prepare(
         `SELECT l.id, l.instagram_username, l.nome, l.nota, l.motivo_nota, l.concorrente,
                 l.motivo_parada, l.mensagens_robo_count, l.ultimo_falante, l.atualizado_em,
@@ -45,11 +46,11 @@ export async function POST(request: NextRequest) {
     }
     requireWorkspaceAccess(usuario, body.workspaceId);
 
-    const etapas = garantirEtapasPadrao(body.workspaceId);
+    const etapas = await garantirEtapasPadrao(body.workspaceId);
     const etapaFila = etapas.find((e) => e.papel === "fila");
 
-    const db = getDb();
-    const resultado = db
+    const db = await getDb();
+    const resultado = await db
       .prepare(
         `INSERT INTO leads (workspace_id, etapa_id, instagram_username, nome)
          VALUES (?, ?, ?, ?)

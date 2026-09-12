@@ -12,11 +12,12 @@ export interface ContaInstagram {
   token_expira_em: string;
 }
 
-export function salvarConta(
+export async function salvarConta(
   workspaceId: number,
   conta: { instagramBusinessId: string; instagramUsername?: string; accessToken: string; expiraEm: Date },
-): void {
-  getDb()
+): Promise<void> {
+  const db = await getDb();
+  await db
     .prepare(
       `INSERT INTO contas_instagram (workspace_id, instagram_business_id, instagram_username, access_token, token_expira_em)
        VALUES (?, ?, ?, ?, ?)
@@ -35,15 +36,17 @@ export function salvarConta(
     );
 }
 
-export function contaPorWorkspace(workspaceId: number): ContaInstagram | undefined {
-  return getDb()
-    .prepare("SELECT * FROM contas_instagram WHERE workspace_id = ?")
-    .get(workspaceId) as ContaInstagram | undefined;
+export async function contaPorWorkspace(workspaceId: number): Promise<ContaInstagram | undefined> {
+  const db = await getDb();
+  return db.prepare("SELECT * FROM contas_instagram WHERE workspace_id = ?").get<ContaInstagram>(workspaceId);
 }
 
 /** Usado pelo webhook: entry.id do payload é o instagram_business_id. */
-export function contaPorInstagramBusinessId(instagramBusinessId: string): ContaInstagram | undefined {
-  return getDb()
+export async function contaPorInstagramBusinessId(
+  instagramBusinessId: string,
+): Promise<ContaInstagram | undefined> {
+  const db = await getDb();
+  return db
     .prepare("SELECT * FROM contas_instagram WHERE instagram_business_id = ?")
-    .get(instagramBusinessId) as ContaInstagram | undefined;
+    .get<ContaInstagram>(instagramBusinessId);
 }

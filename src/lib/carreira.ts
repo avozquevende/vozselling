@@ -92,54 +92,52 @@ export interface MetricasSemana {
   tempoRespostaHoras: number | null;
 }
 
-export function nivelAtual(usuarioId: number): NivelCarreira {
-  const row = getDb()
+export async function nivelAtual(usuarioId: number): Promise<NivelCarreira> {
+  const db = await getDb();
+  const row = await db
     .prepare("SELECT nivel_carreira FROM usuarios WHERE id = ?")
-    .get(usuarioId) as { nivel_carreira: string } | undefined;
+    .get<{ nivel_carreira: string }>(usuarioId);
   const nivel = row?.nivel_carreira ?? "executor";
   return ehNivelValido(nivel) ? nivel : "executor";
 }
 
 /** Métricas dos últimos 7 dias, só sobre leads atribuídos a este operador. */
-export function calcularMetricasSemana(usuarioId: number): MetricasSemana {
-  const db = getDb();
+export async function calcularMetricasSemana(usuarioId: number): Promise<MetricasSemana> {
+  const db = await getDb();
   const desde = "-7 days";
 
-  const abordagens = (
-    db
-      .prepare(
-        `SELECT COUNT(*) AS total FROM leads
-         WHERE responsavel_id = ? AND criado_em >= datetime('now','localtime', ?)`,
-      )
-      .get(usuarioId, desde) as { total: number }
-  ).total;
+  const abordagensRow = await db
+    .prepare(
+      `SELECT COUNT(*) AS total FROM leads
+       WHERE responsavel_id = ? AND criado_em >= datetime('now','localtime', ?)`,
+    )
+    .get<{ total: number }>(usuarioId, desde);
+  const abordagens = abordagensRow!.total;
 
   // "Sessão agendada" não existe como evento — a aproximação é o lead ter
   // chegado numa etapa de papel 'encerra' (saiu das mãos do robô, é onde o
   // operador assume pra fechar) dentro da janela.
-  const sessoesAgendadas = (
-    db
-      .prepare(
-        `SELECT COUNT(*) AS total FROM leads l
-         JOIN etapas e ON e.id = l.etapa_id
-         WHERE l.responsavel_id = ? AND e.papel = 'encerra'
-           AND l.atualizado_em >= datetime('now','localtime', ?)`,
-      )
-      .get(usuarioId, desde) as { total: number }
-  ).total;
+  const sessoesRow = await db
+    .prepare(
+      `SELECT COUNT(*) AS total FROM leads l
+       JOIN etapas e ON e.id = l.etapa_id
+       WHERE l.responsavel_id = ? AND e.papel = 'encerra'
+         AND l.atualizado_em >= datetime('now','localtime', ?)`,
+    )
+    .get<{ total: number }>(usuarioId, desde);
+  const sessoesAgendadas = sessoesRow!.total;
 
-  const comResposta = (
-    db
-      .prepare(
-        `SELECT COUNT(DISTINCT l.id) AS total FROM leads l
-         JOIN mensagens m ON m.lead_id = l.id AND m.remetente = 'lead'
-         WHERE l.responsavel_id = ? AND l.criado_em >= datetime('now','localtime', ?)`,
-      )
-      .get(usuarioId, desde) as { total: number }
-  ).total;
+  const comRespostaRow = await db
+    .prepare(
+      `SELECT COUNT(DISTINCT l.id) AS total FROM leads l
+       JOIN mensagens m ON m.lead_id = l.id AND m.remetente = 'lead'
+       WHERE l.responsavel_id = ? AND l.criado_em >= datetime('now','localtime', ?)`,
+    )
+    .get<{ total: number }>(usuarioId, desde);
+  const comResposta = comRespostaRow!.total;
   const respostaPct = abordagens > 0 ? Math.round((comResposta / abordagens) * 100) : 0;
 
-  const tempoResposta = db
+  const tempoResposta = await db
     .prepare(
       `WITH ordenado AS (
          SELECT m.criado_em,
@@ -155,13 +153,14 @@ export function calcularMetricasSemana(usuarioId: number): MetricasSemana {
        WHERE remetente_anterior = 'lead' AND remetente IN ('robo','operador')
          AND criado_em >= datetime('now','localtime', ?)`,
     )
-    .get(usuarioId, desde) as { horas: number | null };
+    .get<{ horas: number | null }>(usuarioId, desde);
 
   return {
     abordagens,
     sessoesAgendadas,
     respostaPct,
-    tempoRespostaHoras: tempoResposta.horas === null ? null : Math.round(tempoResposta.horas * 10) / 10,
+    tempoRespostaHoras:
+      tempoResposta?.horas == null ? null : Math.round(tempoResposta.horas * 10) / 10,
   };
 }
 
@@ -174,8 +173,8 @@ export interface SinalizacaoPromocao {
  * Só sinaliza — nunca promove sozinho. Critério é o piso das metas do
  * método aplicado às métricas dos últimos 7 dias; um admin decide de fato.
  */
-export function avaliarSinalizacaoPromocao(usuarioId: number): SinalizacaoPromocao {
-  const metricas = calcularMetricasSemana(usuarioId);
+export async function avaliarSinalizacaoPromocao(usuarioId: number): Promise<SinalizacaoPromocao> {
+  const metricas = await calcularMetricasSemana(usuarioId);
   const motivos: string[] = [];
 
   if (metricas.abordagens < METAS_SEMANAIS.abordagensMin) {
@@ -206,28 +205,29 @@ export interface EventoNivel {
   criado_em: string;
 }
 
-export function listarHistoricoNivel(usuarioId: number): EventoNivel[] {
-  return getDb()
+export async function listarHistoricoNivel(usuarioId: number): Promise<EventoNivel[]> {
+  const db = await getDb();
+  return db
     .prepare("SELECT * FROM nivel_eventos WHERE usuario_id = ? ORDER BY criado_em DESC")
-    .all(usuarioId) as EventoNivel[];
+    .all<EventoNivel>(usuarioId);
 }
 
 /** Promove ou rebaixa — sempre uma ação humana (admin), nunca automática. */
-export function definirNivel(
+export async function definirNivel(
   usuarioId: number,
   novoNivel: NivelCarreira,
   observacao: string,
   criadoPor: number,
-): void {
-  const db = getDb();
-  const nivelAnterior = nivelAtual(usuarioId);
+): Promise<void> {
+  const db = await getDb();
+  const nivelAnterior = await nivelAtual(usuarioId);
 
-  const transacao = db.transaction(() => {
-    db.prepare("UPDATE usuarios SET nivel_carreira = ? WHERE id = ?").run(novoNivel, usuarioId);
-    db.prepare(
-      `INSERT INTO nivel_eventos (usuario_id, nivel_anterior, nivel_novo, observacao, criado_por)
-       VALUES (?, ?, ?, ?, ?)`,
-    ).run(usuarioId, nivelAnterior, novoNivel, observacao, criadoPor);
-  });
-  transacao();
+  await db.transaction([
+    { sql: "UPDATE usuarios SET nivel_carreira = ? WHERE id = ?", args: [novoNivel, usuarioId] },
+    {
+      sql: `INSERT INTO nivel_eventos (usuario_id, nivel_anterior, nivel_novo, observacao, criado_por)
+            VALUES (?, ?, ?, ?, ?)`,
+      args: [usuarioId, nivelAnterior, novoNivel, observacao, criadoPor],
+    },
+  ]);
 }

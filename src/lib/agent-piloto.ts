@@ -33,10 +33,9 @@ Siga estritamente o modo indicado abaixo — ele diz o que pode e o que não pod
  * ainda) — nunca muda por método. O conteúdo do Filippe (buscarSecao) entra
  * por cima: script, exemplos, forma de perguntar — a voz, não a régua.
  */
-function montarSistema(modo: Exclude<ModoConversa, "excedeu_regua">): string {
+async function montarSistema(modo: Exclude<ModoConversa, "excedeu_regua">): Promise<string> {
   const base = `${SISTEMA_BASE}\n\n${INSTRUCAO_POR_MODO[modo]}`;
-  const tomDeVoz = buscarSecao("tom_de_voz");
-  const doMetodo = buscarSecao(modo);
+  const [tomDeVoz, doMetodo] = await Promise.all([buscarSecao("tom_de_voz"), buscarSecao(modo)]);
   const partes = [tomDeVoz, doMetodo].filter(Boolean);
   if (partes.length === 0) return base;
   return `${base}\n\n--- Como fazer isso, segundo o método ---\n${partes.join("\n\n")}`;
@@ -54,13 +53,11 @@ function montarPrompt(lead: LeadNaFila, historico: HistoricoItem[]): string {
   return `Conversa até agora:\n${conversa}\n\nEscreva a próxima mensagem, só o texto dela.`;
 }
 
-function buscarHistorico(leadId: number): HistoricoItem[] {
-  const db = getDb();
+async function buscarHistorico(leadId: number): Promise<HistoricoItem[]> {
+  const db = await getDb();
   return db
-    .prepare(
-      "SELECT remetente, texto FROM mensagens WHERE lead_id = ? ORDER BY criado_em ASC",
-    )
-    .all(leadId) as HistoricoItem[];
+    .prepare("SELECT remetente, texto FROM mensagens WHERE lead_id = ? ORDER BY criado_em ASC")
+    .all<HistoricoItem>(leadId);
 }
 
 export interface ResultadoPiloto {
@@ -76,14 +73,14 @@ export interface ResultadoPiloto {
  * leitura da fila e o processamento.
  */
 export async function processarProximaMensagem(lead: LeadNaFila): Promise<ResultadoPiloto> {
-  if (!roboAutorizadoNaEtapa(lead.etapa_id)) {
+  if (!(await roboAutorizadoNaEtapa(lead.etapa_id))) {
     return { status: "robo_nao_autorizado" };
   }
 
   const modo = modoDaProximaMensagem(lead.mensagens_robo_count);
 
   if (modo === "excedeu_regua") {
-    devolverAoOperador(lead);
+    await devolverAoOperador(lead);
     return { status: "devolvido_ao_operador", modo };
   }
 
@@ -92,8 +89,8 @@ export async function processarProximaMensagem(lead: LeadNaFila): Promise<Result
     return { status: "robo_nao_autorizado", modo };
   }
 
-  const historico = buscarHistorico(lead.id);
-  const sistema = montarSistema(modo);
+  const historico = await buscarHistorico(lead.id);
+  const sistema = await montarSistema(modo);
   const texto = await gerarTexto({
     modelo: process.env.A3_MODEL ?? "gpt-4o-mini",
     sistema,
@@ -105,31 +102,30 @@ export async function processarProximaMensagem(lead: LeadNaFila): Promise<Result
   // mensagens_robo_count/ultimo_falante só avançam se a mensagem realmente
   // saiu (uma falha de envio aqui joga o erro pra cima, sem gravar nada).
   await enviarParaLead(lead.workspace_id, lead.instagram_scoped_id, texto);
-  registrarMensagemDoRobo(lead.id, texto);
+  await registrarMensagemDoRobo(lead.id, texto);
   return { status: "mensagem_gerada", texto, modo };
 }
 
-function registrarMensagemDoRobo(leadId: number, texto: string): void {
-  const db = getDb();
-  const transacao = db.transaction(() => {
-    db.prepare(
-      "INSERT INTO mensagens (lead_id, remetente, texto) VALUES (?, 'robo', ?)",
-    ).run(leadId, texto);
-    db.prepare(
-      `UPDATE leads
-       SET mensagens_robo_count = mensagens_robo_count + 1,
-           ultimo_falante = 'robo',
-           atualizado_em = datetime('now','localtime')
-       WHERE id = ?`,
-    ).run(leadId);
-  });
-  transacao();
+async function registrarMensagemDoRobo(leadId: number, texto: string): Promise<void> {
+  const db = await getDb();
+  await db.transaction([
+    { sql: "INSERT INTO mensagens (lead_id, remetente, texto) VALUES (?, 'robo', ?)", args: [leadId, texto] },
+    {
+      sql: `UPDATE leads
+            SET mensagens_robo_count = mensagens_robo_count + 1,
+                ultimo_falante = 'robo',
+                atualizado_em = datetime('now','localtime')
+            WHERE id = ?`,
+      args: [leadId],
+    },
+  ]);
 }
 
 /** Passou da régua (15ª+): sai das mãos do robô, primeira etapa de papel "encerra". */
-function devolverAoOperador(lead: LeadNaFila): void {
-  const etapaDestino = etapasDoWorkspace(lead.workspace_id).find((e) => e.papel === "encerra");
+async function devolverAoOperador(lead: LeadNaFila): Promise<void> {
+  const etapas = await etapasDoWorkspace(lead.workspace_id);
+  const etapaDestino = etapas.find((e) => e.papel === "encerra");
   if (etapaDestino) {
-    moverLeadParaEtapa(lead.id, etapaDestino.id);
+    await moverLeadParaEtapa(lead.id, etapaDestino.id);
   }
 }

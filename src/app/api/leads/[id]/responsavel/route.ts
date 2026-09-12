@@ -13,27 +13,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const body = (await request.json()) as { responsavelId?: number | null };
 
-    const db = getDb();
-    const lead = db.prepare("SELECT workspace_id FROM leads WHERE id = ?").get(leadId) as
-      | { workspace_id: number }
-      | undefined;
+    const db = await getDb();
+    const lead = await db
+      .prepare("SELECT workspace_id FROM leads WHERE id = ?")
+      .get<{ workspace_id: number }>(leadId);
     if (!lead) throw new ErroApi(404, "Lead não encontrado.");
     requireWorkspaceAccess(usuario, lead.workspace_id);
 
     if (body.responsavelId != null) {
-      const responsavel = db
+      const responsavel = await db
         .prepare("SELECT workspace_id FROM usuarios WHERE id = ?")
-        .get(body.responsavelId) as { workspace_id: number | null } | undefined;
+        .get<{ workspace_id: number | null }>(body.responsavelId);
       if (!responsavel) throw new ErroApi(404, "Responsável não encontrado.");
       if (responsavel.workspace_id !== lead.workspace_id) {
         throw new ErroApi(400, "Responsável precisa ser do mesmo workspace do lead.");
       }
     }
 
-    db.prepare("UPDATE leads SET responsavel_id = ?, atualizado_em = datetime('now','localtime') WHERE id = ?").run(
-      body.responsavelId ?? null,
-      leadId,
-    );
+    await db
+      .prepare("UPDATE leads SET responsavel_id = ?, atualizado_em = datetime('now','localtime') WHERE id = ?")
+      .run(body.responsavelId ?? null, leadId);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

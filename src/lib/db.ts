@@ -1,42 +1,100 @@
 import path from "node:path";
-import fs from "node:fs";
-import Database from "better-sqlite3";
+import { createClient, type Client, type InValue, type InStatement } from "@libsql/client";
 
-// Conexão em cache no globalThis: sobrevive ao hot-reload do Next em dev.
-// Em produção, ALTER TABLE novo só roda depois de reiniciar o processo e a
-// primeira requisição tocar o banco (ver armadilha no handoff, seção 9).
+// Turso (libsql) quando configurado — obrigatório em serverless (Vercel):
+// arquivo local não sobrevive entre invocações diferentes da função (cada
+// uma pode ter seu próprio /tmp). Sem TURSO_DATABASE_URL, cai num arquivo
+// local — bom para dev, mas nunca para produção serverless. Ver handoff,
+// seção 04/08.
 declare global {
-  var __vozSellingDb: Database.Database | undefined;
+  var __vozSellingDb: Promise<Client> | undefined;
 }
 
-function resolveDbPath(): string {
+export interface Row {
+  [coluna: string]: unknown;
+}
+
+export interface ResultadoRun {
+  lastInsertRowid: number;
+  changes: number;
+}
+
+export interface Statement {
+  get<T = Row>(...args: unknown[]): Promise<T | undefined>;
+  all<T = Row>(...args: unknown[]): Promise<T[]>;
+  run(...args: unknown[]): Promise<ResultadoRun>;
+}
+
+export interface Db {
+  prepare(sql: string): Statement;
+  /** Várias declarações separadas por `;` — só para schema/migração. */
+  exec(sql: string): Promise<void>;
+  /** Atômico: todas as escritas aplicam juntas ou nenhuma aplica. */
+  transaction(statements: InStatement[]): Promise<void>;
+}
+
+function resolveLocalDbUrl(): string {
   if (process.env.DB_PATH) {
-    return path.isAbsolute(process.env.DB_PATH)
+    const dbPath = path.isAbsolute(process.env.DB_PATH)
       ? process.env.DB_PATH
       : path.join(process.cwd(), process.env.DB_PATH);
+    return `file:${dbPath}`;
   }
 
-  // Na Vercel o filesystem do deploy é somente-leitura fora de /tmp — não dá
-  // para abrir o SQLite em ./data como na VPS. /tmp funciona para clicar e
-  // testar a UI, mas é efêmero: reseta a qualquer momento (cold start, novo
-  // deploy, outra instância). Não é onde o produto mora de verdade — é só
-  // para dar uma URL de teste rápida. Ver docs/handoff-tecnico.md.
+  // Fallback só para dev local sem Turso configurado. Em serverless (Vercel)
+  // isto é perigoso — arquivo não persiste entre instâncias — mas não bloqueia
+  // pra não quebrar quem só quer subir localmente rápido.
   if (process.env.VERCEL) {
-    return "/tmp/dreamrobot.db";
+    return "file:/tmp/dreamrobot.db";
   }
 
-  return path.join(process.cwd(), "./data/dreamrobot.db");
+  return `file:${path.join(process.cwd(), "./data/dreamrobot.db")}`;
 }
 
-function createConnection(): Database.Database {
-  const dbPath = resolveDbPath();
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+function criarClienteBruto(): Client {
+  if (process.env.TURSO_DATABASE_URL) {
+    return createClient({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+  }
+  return createClient({ url: resolveLocalDbUrl() });
+}
 
-  const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
+function envolverCliente(client: Client): Db {
+  return {
+    prepare(sql: string): Statement {
+      return {
+        async get<T = Row>(...args: unknown[]): Promise<T | undefined> {
+          const resultado = await client.execute({ sql, args: args as InValue[] });
+          return resultado.rows[0] as T | undefined;
+        },
+        async all<T = Row>(...args: unknown[]): Promise<T[]> {
+          const resultado = await client.execute({ sql, args: args as InValue[] });
+          return resultado.rows as T[];
+        },
+        async run(...args: unknown[]): Promise<ResultadoRun> {
+          const resultado = await client.execute({ sql, args: args as InValue[] });
+          return {
+            lastInsertRowid: Number(resultado.lastInsertRowid ?? 0),
+            changes: resultado.rowsAffected,
+          };
+        },
+      };
+    },
+    async exec(sql: string): Promise<void> {
+      await client.executeMultiple(sql);
+    },
+    async transaction(statements: InStatement[]): Promise<void> {
+      await client.batch(statements, "write");
+    },
+  };
+}
 
-  db.exec(`
+async function createConnection(): Promise<Client> {
+  const client = criarClienteBruto();
+
+  await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS workspaces (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nome TEXT NOT NULL,
@@ -183,10 +241,10 @@ function createConnection(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_acoes_workspace_tipo_data ON acoes_prospeccao(workspace_id, tipo, criado_em);
   `);
 
-  runMigrations(db);
+  await runMigrations(client);
 
   // Depende de coluna criada em runMigrations — precisa rodar depois.
-  db.exec(`
+  await client.executeMultiple(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_workspace_igsid
       ON leads(workspace_id, instagram_scoped_id)
       WHERE instagram_scoped_id IS NOT NULL;
@@ -194,12 +252,12 @@ function createConnection(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_nivel_eventos_usuario ON nivel_eventos(usuario_id, criado_em);
   `);
 
-  return db;
+  return client;
 }
 
 // Migrações incrementais. ALTER TABLE ... ADD COLUMN falha se a coluna já
 // existe — cada uma roda isolada e ignora esse erro específico.
-function runMigrations(db: Database.Database): void {
+async function runMigrations(client: Client): Promise<void> {
   const migrations: string[] = [
     "ALTER TABLE leads ADD COLUMN motivo_nota TEXT",
     "ALTER TABLE leads ADD COLUMN concorrente INTEGER NOT NULL DEFAULT 0",
@@ -213,7 +271,7 @@ function runMigrations(db: Database.Database): void {
 
   for (const sql of migrations) {
     try {
-      db.exec(sql);
+      await client.execute(sql);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (!message.includes("duplicate column name")) {
@@ -223,16 +281,15 @@ function runMigrations(db: Database.Database): void {
   }
 }
 
-export function getDb(): Database.Database {
+export function getDb(): Promise<Db> {
   if (!globalThis.__vozSellingDb) {
     globalThis.__vozSellingDb = createConnection();
   }
-  return globalThis.__vozSellingDb;
+  return globalThis.__vozSellingDb.then(envolverCliente);
 }
 
-export function nowLocal(): string {
-  const row = getDb()
-    .prepare("SELECT datetime('now','localtime') AS agora")
-    .get() as { agora: string };
-  return row.agora;
+export async function nowLocal(): Promise<string> {
+  const db = await getDb();
+  const row = await db.prepare("SELECT datetime('now','localtime') AS agora").get<{ agora: string }>();
+  return row!.agora;
 }

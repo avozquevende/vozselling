@@ -11,9 +11,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     const leadId = Number(id);
     if (!leadId) throw new ErroApi(400, "id de lead inválido.");
 
-    const lead = getDb()
-      .prepare("SELECT workspace_id FROM leads WHERE id = ?")
-      .get(leadId) as { workspace_id: number } | undefined;
+    const db = await getDb();
+    const lead = await db.prepare("SELECT workspace_id FROM leads WHERE id = ?").get<{ workspace_id: number }>(leadId);
     if (!lead) throw new ErroApi(404, "Lead não encontrado.");
     requireWorkspaceAccess(usuario, lead.workspace_id);
 

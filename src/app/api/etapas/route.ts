@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     if (!workspaceId) throw new ErroApi(400, "workspaceId é obrigatório.");
     requireWorkspaceAccess(usuario, workspaceId);
 
-    const etapas = garantirEtapasPadrao(workspaceId);
+    const etapas = await garantirEtapasPadrao(workspaceId);
     return NextResponse.json({ etapas });
   } catch (err) {
     return erroParaResposta(err);

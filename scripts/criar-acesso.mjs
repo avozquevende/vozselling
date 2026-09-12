@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// Cria um usuário de acesso local (admin ou operador).
+// Cria um usuário de acesso (admin ou operador). Usa Turso quando
+// TURSO_DATABASE_URL está configurado (produção); senão abre um arquivo
+// local (dev/VPS sem Turso).
 // Uso: node scripts/criar-acesso.mjs --email voce@x.com --papel admin --nome "Voce"
 //      node scripts/criar-acesso.mjs --email op@x.com --papel operador --nome "Op" --workspace-slug academia-x
 
 import path from "node:path";
 import { randomBytes, scryptSync } from "node:crypto";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 
 function parseArgs(argv) {
   const args = {};
@@ -18,7 +20,7 @@ function parseArgs(argv) {
 
 const args = parseArgs(process.argv.slice(2));
 if (!args.email || !args.papel || !args.nome) {
-  console.error("Uso: node scripts/criar-acesso.mjs --email X --papel admin|operador --nome \"Nome\" [--workspace-slug slug] [--senha senha]");
+  console.error('Uso: node scripts/criar-acesso.mjs --email X --papel admin|operador --nome "Nome" [--workspace-slug slug] [--senha senha]');
   process.exit(1);
 }
 if (args.papel !== "admin" && args.papel !== "operador") {
@@ -30,16 +32,17 @@ if (args.papel === "operador" && !args["workspace-slug"]) {
   process.exit(1);
 }
 
-const dbPath = process.env.DB_PATH ?? "./data/dreamrobot.db";
-const db = new Database(path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath));
-db.pragma("foreign_keys = ON");
+const db = process.env.TURSO_DATABASE_URL
+  ? createClient({ url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN })
+  : createClient({
+      url: `file:${path.isAbsolute(process.env.DB_PATH ?? "") ? process.env.DB_PATH : path.join(process.cwd(), process.env.DB_PATH ?? "./data/dreamrobot.db")}`,
+    });
 
-db.exec(`
+await db.executeMultiple(`
   CREATE TABLE IF NOT EXISTS workspaces (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
-    plano_id INTEGER,
     ativo INTEGER NOT NULL DEFAULT 1,
     icp TEXT NOT NULL DEFAULT '',
     ofertas TEXT NOT NULL DEFAULT '',
@@ -59,14 +62,15 @@ db.exec(`
 let workspaceId = null;
 if (args.papel === "operador") {
   const slug = args["workspace-slug"];
-  const existente = db.prepare("SELECT id FROM workspaces WHERE slug = ?").get(slug);
+  const existente = (await db.execute({ sql: "SELECT id FROM workspaces WHERE slug = ?", args: [slug] })).rows[0];
   if (existente) {
     workspaceId = existente.id;
   } else {
-    const resultado = db
-      .prepare("INSERT INTO workspaces (nome, slug) VALUES (?, ?)")
-      .run(args.nome, slug);
-    workspaceId = resultado.lastInsertRowid;
+    const resultado = await db.execute({
+      sql: "INSERT INTO workspaces (nome, slug) VALUES (?, ?)",
+      args: [args.nome, slug],
+    });
+    workspaceId = Number(resultado.lastInsertRowid);
     console.log(`Workspace "${slug}" criado (id ${workspaceId}).`);
   }
 }
@@ -76,12 +80,13 @@ const salt = randomBytes(16).toString("hex");
 const hash = scryptSync(senha, salt, 64).toString("hex");
 const senhaHash = `${salt}:${hash}`;
 
-db.prepare(
-  `INSERT INTO usuarios (workspace_id, nome, email, senha_hash, papel)
-   VALUES (?, ?, ?, ?, ?)
-   ON CONFLICT(email) DO UPDATE SET
-     nome = excluded.nome, senha_hash = excluded.senha_hash, papel = excluded.papel, workspace_id = excluded.workspace_id`,
-).run(workspaceId, args.nome, args.email, senhaHash, args.papel);
+await db.execute({
+  sql: `INSERT INTO usuarios (workspace_id, nome, email, senha_hash, papel)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(email) DO UPDATE SET
+          nome = excluded.nome, senha_hash = excluded.senha_hash, papel = excluded.papel, workspace_id = excluded.workspace_id`,
+  args: [workspaceId, args.nome, args.email, senhaHash, args.papel],
+});
 
 console.log(`Acesso criado: ${args.email} (${args.papel})`);
 if (!args.senha) {

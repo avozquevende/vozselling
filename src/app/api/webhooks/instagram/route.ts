@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
   for (const entrada of corpo.entry ?? []) {
     if (!entrada.id) continue;
-    const conta = contaPorInstagramBusinessId(entrada.id);
+    const conta = await contaPorInstagramBusinessId(entrada.id);
     if (!conta) {
       console.log(`[webhook instagram] mensagem para conta não conectada: ${entrada.id}`);
       continue;

@@ -9,7 +9,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const { id } = await params;
     const workspaceId = Number(id);
 
-    const usuarios = getDb()
+    const db = await getDb();
+    const usuarios = await db
       .prepare("SELECT id, nome, email, papel, criado_em FROM usuarios WHERE workspace_id = ?")
       .all(workspaceId);
     return NextResponse.json({ usuarios });
@@ -29,12 +30,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw new ErroApi(400, "nome, email e senha são obrigatórios.");
     }
 
-    const workspace = getDb().prepare("SELECT id FROM workspaces WHERE id = ?").get(workspaceId);
+    const db = await getDb();
+    const workspace = await db.prepare("SELECT id FROM workspaces WHERE id = ?").get(workspaceId);
     if (!workspace) throw new ErroApi(404, "Workspace não encontrado.");
 
     const senhaHash = hashSenha(body.senha);
     try {
-      const resultado = getDb()
+      const resultado = await db
         .prepare(
           "INSERT INTO usuarios (workspace_id, nome, email, senha_hash, papel) VALUES (?, ?, ?, ?, 'operador')",
         )

@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { etapasDoWorkspace, moverLeadParaEtapa } from "./etapas";
+import { etapasDoWorkspace } from "./etapas";
 
 // Régua de retomada: 7 follow-ups por etapa/motivo, cada uma com fala e
 // ritmo próprios (spec, seção 04). O contador zera quando o lead avança —
@@ -87,29 +87,28 @@ export interface ItemRetomada {
 }
 
 /** Zera qualquer retomada ativa do lead e começa uma nova escada do passo 1. */
-export function entrarNaFilaDeRetomada(leadId: number, escada: Escada): void {
-  const db = getDb();
+export async function entrarNaFilaDeRetomada(leadId: number, escada: Escada): Promise<void> {
+  const db = await getDb();
   const intervaloPrimeiroToque = ESCADAS[escada].intervalosDias[0];
-  const transacao = db.transaction(() => {
-    db.prepare("UPDATE retomada_fila SET ativo = 0 WHERE lead_id = ? AND ativo = 1").run(leadId);
-    db.prepare(
-      `INSERT INTO retomada_fila (lead_id, escada, passo, proximo_toque_em, ativo)
-       VALUES (?, ?, 1, datetime('now','localtime', ?), 1)`,
-    ).run(leadId, escada, `+${intervaloPrimeiroToque} days`);
-  });
-  transacao();
+  await db.transaction([
+    { sql: "UPDATE retomada_fila SET ativo = 0 WHERE lead_id = ? AND ativo = 1", args: [leadId] },
+    {
+      sql: `INSERT INTO retomada_fila (lead_id, escada, passo, proximo_toque_em, ativo)
+            VALUES (?, ?, 1, datetime('now','localtime', ?), 1)`,
+      args: [leadId, escada, `+${intervaloPrimeiroToque} days`],
+    },
+  ]);
 }
 
 /** O lead respondeu ou avançou de etapa: a régua de retomada não se aplica mais. */
-export function zerarRetomada(leadId: number): void {
-  getDb()
-    .prepare("UPDATE retomada_fila SET ativo = 0 WHERE lead_id = ? AND ativo = 1")
-    .run(leadId);
+export async function zerarRetomada(leadId: number): Promise<void> {
+  const db = await getDb();
+  await db.prepare("UPDATE retomada_fila SET ativo = 0 WHERE lead_id = ? AND ativo = 1").run(leadId);
 }
 
-export function buscarProntosParaToque(workspaceId: number): ItemRetomada[] {
-  const db = getDb();
-  const rows = db
+export async function buscarProntosParaToque(workspaceId: number): Promise<ItemRetomada[]> {
+  const db = await getDb();
+  return db
     .prepare(
       `SELECT r.id, r.lead_id, l.instagram_scoped_id, r.escada, r.passo, r.proximo_toque_em
        FROM retomada_fila r
@@ -119,8 +118,7 @@ export function buscarProntosParaToque(workspaceId: number): ItemRetomada[] {
          AND r.proximo_toque_em <= datetime('now','localtime')
        ORDER BY r.proximo_toque_em ASC`,
     )
-    .all(workspaceId);
-  return rows as ItemRetomada[];
+    .all<ItemRetomada>(workspaceId);
 }
 
 /**
@@ -128,25 +126,34 @@ export function buscarProntosParaToque(workspaceId: number): ItemRetomada[] {
  * nutrição (presença de longo prazo) em vez de insistir mais — insistir não
  * traz ninguém e arrisca a conta.
  */
-export function avancarPasso(item: ItemRetomada, workspaceId: number): void {
-  const db = getDb();
+export async function avancarPasso(item: ItemRetomada, workspaceId: number): Promise<void> {
+  const db = await getDb();
   const definicao = ESCADAS[item.escada];
 
   if (item.passo >= 7) {
-    const transacao = db.transaction(() => {
-      db.prepare("UPDATE retomada_fila SET ativo = 0 WHERE id = ?").run(item.id);
-      const etapaNutricao = etapasDoWorkspace(workspaceId).find((e) => e.papel === "nutre");
-      if (etapaNutricao) moverLeadParaEtapa(item.lead_id, etapaNutricao.id);
-    });
-    transacao();
+    const etapas = await etapasDoWorkspace(workspaceId);
+    const etapaNutricao = etapas.find((e) => e.papel === "nutre");
+    if (etapaNutricao) {
+      await db.transaction([
+        { sql: "UPDATE retomada_fila SET ativo = 0 WHERE id = ?", args: [item.id] },
+        {
+          sql: "UPDATE leads SET etapa_id = ?, atualizado_em = datetime('now','localtime') WHERE id = ?",
+          args: [etapaNutricao.id, item.lead_id],
+        },
+      ]);
+    } else {
+      await db.prepare("UPDATE retomada_fila SET ativo = 0 WHERE id = ?").run(item.id);
+    }
     return;
   }
 
   const proximoPasso = item.passo + 1;
   const intervalo = definicao.intervalosDias[proximoPasso - 1];
-  db.prepare(
-    `UPDATE retomada_fila
-     SET passo = ?, proximo_toque_em = datetime('now','localtime', ?)
-     WHERE id = ?`,
-  ).run(proximoPasso, `+${intervalo} days`, item.id);
+  await db
+    .prepare(
+      `UPDATE retomada_fila
+       SET passo = ?, proximo_toque_em = datetime('now','localtime', ?)
+       WHERE id = ?`,
+    )
+    .run(proximoPasso, `+${intervalo} days`, item.id);
 }

@@ -16,17 +16,23 @@ import { erroParaResposta } from "@/lib/api-utils";
 export async function GET() {
   try {
     const usuario = await requireApiUser();
-    const nivel = nivelAtual(usuario.id);
+    const nivel = await nivelAtual(usuario.id);
     const proximo = proximoNivel(nivel);
+
+    const [metricas, sinalizacao, historico] = await Promise.all([
+      calcularMetricasSemana(usuario.id),
+      avaliarSinalizacaoPromocao(usuario.id),
+      listarHistoricoNivel(usuario.id),
+    ]);
 
     return NextResponse.json({
       nivel,
       descricao: descricaoDoNivel(nivel),
       proximoNivel: proximo ? descricaoDoNivel(proximo) : null,
-      metricas: calcularMetricasSemana(usuario.id),
+      metricas,
       metas: METAS_SEMANAIS,
-      sinalizacao: avaliarSinalizacaoPromocao(usuario.id),
-      historico: listarHistoricoNivel(usuario.id),
+      sinalizacao,
+      historico,
     });
   } catch (err) {
     return erroParaResposta(err);

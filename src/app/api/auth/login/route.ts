@@ -10,13 +10,17 @@ export async function POST(request: NextRequest) {
       throw new ErroApi(400, "Informe email e senha.");
     }
 
-    const usuario = getDb()
-      .prepare(
-        "SELECT id, workspace_id, nome, email, papel, senha_hash FROM usuarios WHERE email = ?",
-      )
-      .get(email) as
-      | { id: number; workspace_id: number | null; nome: string; email: string; papel: string; senha_hash: string }
-      | undefined;
+    const db = await getDb();
+    const usuario = await db
+      .prepare("SELECT id, workspace_id, nome, email, papel, senha_hash FROM usuarios WHERE email = ?")
+      .get<{
+        id: number;
+        workspace_id: number | null;
+        nome: string;
+        email: string;
+        papel: string;
+        senha_hash: string;
+      }>(email);
 
     if (!usuario || !verificarSenha(senha, usuario.senha_hash)) {
       throw new ErroApi(401, "Email ou senha inválidos.");

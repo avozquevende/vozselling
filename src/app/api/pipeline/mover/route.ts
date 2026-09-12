@@ -13,21 +13,22 @@ export async function POST(request: NextRequest) {
       throw new ErroApi(400, "leadId e etapaId são obrigatórios.");
     }
 
-    const etapaDestino = etapaPorId(body.etapaId);
+    const etapaDestino = await etapaPorId(body.etapaId);
     if (!etapaDestino) throw new ErroApi(404, "Etapa não encontrada.");
     requireWorkspaceAccess(usuario, etapaDestino.workspace_id);
 
-    const lead = getDb()
+    const db = await getDb();
+    const lead = await db
       .prepare("SELECT workspace_id FROM leads WHERE id = ?")
-      .get(body.leadId) as { workspace_id: number } | undefined;
+      .get<{ workspace_id: number }>(body.leadId);
     if (!lead) throw new ErroApi(404, "Lead não encontrado.");
     if (lead.workspace_id !== etapaDestino.workspace_id) {
       throw new ErroApi(400, "Etapa não pertence ao mesmo workspace do lead.");
     }
 
-    moverLeadParaEtapa(body.leadId, body.etapaId);
+    await moverLeadParaEtapa(body.leadId, body.etapaId);
     // Lead avançou: cada degrau do funil ganha fôlego novo na retomada.
-    zerarRetomada(body.leadId);
+    await zerarRetomada(body.leadId);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

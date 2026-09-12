@@ -11,17 +11,21 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const { id } = await params;
     const workspaceId = Number(id);
 
-    const workspace = getDb()
+    const db = await getDb();
+    const workspace = await db
       .prepare("SELECT id, nome, slug, ativo, icp, ofertas, criado_em FROM workspaces WHERE id = ?")
-      .get(workspaceId) as
-      | { id: number; nome: string; slug: string; ativo: number; icp: string; ofertas: string; criado_em: string }
-      | undefined;
+      .get<{ id: number; nome: string; slug: string; ativo: number; icp: string; ofertas: string; criado_em: string }>(
+        workspaceId,
+      );
     if (!workspace) throw new ErroApi(404, "Workspace não encontrado.");
 
-    const conta = contaPorWorkspace(workspaceId);
+    const [conta, limites] = await Promise.all([
+      contaPorWorkspace(workspaceId),
+      limitesDoWorkspace(workspaceId),
+    ]);
     return NextResponse.json({
       workspace,
-      limites: limitesDoWorkspace(workspaceId),
+      limites,
       instagram: conta
         ? { conectado: true, username: conta.instagram_username, expiraEm: conta.token_expira_em }
         : { conectado: false },
@@ -44,22 +48,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       tetoFollowsDia?: number;
     };
 
-    const db = getDb();
+    const db = await getDb();
     if (body.icp !== undefined || body.ofertas !== undefined) {
-      const atual = db.prepare("SELECT icp, ofertas FROM workspaces WHERE id = ?").get(workspaceId) as
-        | { icp: string; ofertas: string }
-        | undefined;
+      const atual = await db
+        .prepare("SELECT icp, ofertas FROM workspaces WHERE id = ?")
+        .get<{ icp: string; ofertas: string }>(workspaceId);
       if (!atual) throw new ErroApi(404, "Workspace não encontrado.");
-      db.prepare("UPDATE workspaces SET icp = ?, ofertas = ? WHERE id = ?").run(
-        body.icp ?? atual.icp,
-        body.ofertas ?? atual.ofertas,
-        workspaceId,
-      );
+      await db
+        .prepare("UPDATE workspaces SET icp = ?, ofertas = ? WHERE id = ?")
+        .run(body.icp ?? atual.icp, body.ofertas ?? atual.ofertas, workspaceId);
     }
 
     if (body.tetoAdicoesDia !== undefined || body.tetoFollowsDia !== undefined) {
-      const atuais = limitesDoWorkspace(workspaceId);
-      definirLimitesDoWorkspace(workspaceId, {
+      const atuais = await limitesDoWorkspace(workspaceId);
+      await definirLimitesDoWorkspace(workspaceId, {
         tetoAdicoesDia: body.tetoAdicoesDia ?? atuais.teto_adicoes_dia,
         tetoFollowsDia: body.tetoFollowsDia ?? atuais.teto_follows_dia,
       });

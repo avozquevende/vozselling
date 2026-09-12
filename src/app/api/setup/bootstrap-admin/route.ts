@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
     }
 
     const senhaHash = hashSenha(body.senha);
-    getDb()
+    const db = await getDb();
+    await db
       .prepare(
         `INSERT INTO usuarios (workspace_id, nome, email, senha_hash, papel)
          VALUES (NULL, ?, ?, ?, 'admin')

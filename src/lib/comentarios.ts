@@ -28,8 +28,9 @@ export interface RegistrarComentarioInput {
   acao: AcaoComentario;
 }
 
-export function registrarComentario(input: RegistrarComentarioInput): void {
-  getDb()
+export async function registrarComentario(input: RegistrarComentarioInput): Promise<void> {
+  const db = await getDb();
+  await db
     .prepare(
       `INSERT INTO comentarios (workspace_id, post_id, autor_instagram, texto, nota, acao)
        VALUES (?, ?, ?, ?, ?, ?)`,

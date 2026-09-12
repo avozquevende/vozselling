@@ -37,9 +37,9 @@ function toEtapa(row: unknown): Etapa {
   return { ...r, papel: r.papel };
 }
 
-export function etapasDoWorkspace(workspaceId: number): Etapa[] {
-  const db = getDb();
-  const rows = db
+export async function etapasDoWorkspace(workspaceId: number): Promise<Etapa[]> {
+  const db = await getDb();
+  const rows = await db
     .prepare(
       "SELECT id, workspace_id, nome, papel, ordem FROM etapas WHERE workspace_id = ? ORDER BY ordem ASC",
     )
@@ -48,40 +48,38 @@ export function etapasDoWorkspace(workspaceId: number): Etapa[] {
 }
 
 /** Idempotente: cria o funil padrão só se o workspace ainda não tiver etapas. */
-export function garantirEtapasPadrao(workspaceId: number): Etapa[] {
-  const db = getDb();
-  const existentes = etapasDoWorkspace(workspaceId);
+export async function garantirEtapasPadrao(workspaceId: number): Promise<Etapa[]> {
+  const db = await getDb();
+  const existentes = await etapasDoWorkspace(workspaceId);
   if (existentes.length > 0) return existentes;
 
-  const inserir = db.prepare(
-    "INSERT INTO etapas (workspace_id, nome, papel, ordem) VALUES (?, ?, ?, ?)",
+  await db.transaction(
+    FUNIL_PADRAO.map((etapa) => ({
+      sql: "INSERT INTO etapas (workspace_id, nome, papel, ordem) VALUES (?, ?, ?, ?)",
+      args: [workspaceId, etapa.nome, etapa.papel, etapa.ordem],
+    })),
   );
-  const transacao = db.transaction(() => {
-    for (const etapa of FUNIL_PADRAO) {
-      inserir.run(workspaceId, etapa.nome, etapa.papel, etapa.ordem);
-    }
-  });
-  transacao();
 
   return etapasDoWorkspace(workspaceId);
 }
 
-export function etapaPorId(etapaId: number): Etapa | undefined {
-  const db = getDb();
-  const row = db
+export async function etapaPorId(etapaId: number): Promise<Etapa | undefined> {
+  const db = await getDb();
+  const row = await db
     .prepare("SELECT id, workspace_id, nome, papel, ordem FROM etapas WHERE id = ?")
     .get(etapaId);
   return row ? toEtapa(row) : undefined;
 }
 
 /** A pergunta certa: qual o papel desta etapa — nunca "qual o nome dela". */
-export function papelDaEtapa(etapaId: number): Papel | undefined {
-  return etapaPorId(etapaId)?.papel;
+export async function papelDaEtapa(etapaId: number): Promise<Papel | undefined> {
+  const etapa = await etapaPorId(etapaId);
+  return etapa?.papel;
 }
 
-export function moverLeadParaEtapa(leadId: number, etapaId: number): void {
-  const db = getDb();
-  db.prepare(
-    "UPDATE leads SET etapa_id = ?, atualizado_em = datetime('now','localtime') WHERE id = ?",
-  ).run(etapaId, leadId);
+export async function moverLeadParaEtapa(leadId: number, etapaId: number): Promise<void> {
+  const db = await getDb();
+  await db
+    .prepare("UPDATE leads SET etapa_id = ?, atualizado_em = datetime('now','localtime') WHERE id = ?")
+    .run(etapaId, leadId);
 }

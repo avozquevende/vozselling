@@ -12,17 +12,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
 
-  const workspaces = getDb()
-    .prepare("SELECT id FROM workspaces WHERE ativo = 1")
-    .all() as Array<{ id: number }>;
+  const db = await getDb();
+  const workspaces = await db.prepare("SELECT id FROM workspaces WHERE ativo = 1").all<{ id: number }>();
 
   let processados = 0;
   for (const { id: workspaceId } of workspaces) {
-    const prontos = buscarProntosParaToque(workspaceId);
+    const prontos = await buscarProntosParaToque(workspaceId);
     for (const item of prontos) {
-      if (!podeResponderAgora(workspaceId).liberado) break;
+      const verificacao = await podeResponderAgora(workspaceId);
+      if (!verificacao.liberado) break;
       await processarToqueDeRetomada(item, workspaceId);
-      registrarAcao(workspaceId, "resposta");
+      await registrarAcao(workspaceId, "resposta");
       processados++;
     }
   }

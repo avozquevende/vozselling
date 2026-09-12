@@ -13,18 +13,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
 
-  const workspaces = getDb()
-    .prepare("SELECT id FROM workspaces WHERE ativo = 1")
-    .all() as Array<{ id: number }>;
+  const db = await getDb();
+  const workspaces = await db.prepare("SELECT id FROM workspaces WHERE ativo = 1").all<{ id: number }>();
 
   let processados = 0;
   for (const { id: workspaceId } of workspaces) {
-    const fila = buscarFilaDoPiloto(workspaceId);
+    const fila = await buscarFilaDoPiloto(workspaceId);
     for (const lead of fila) {
-      if (!podeResponderAgora(workspaceId).liberado) break;
+      const verificacao = await podeResponderAgora(workspaceId);
+      if (!verificacao.liberado) break;
       const resultado = await processarProximaMensagem(lead);
       if (resultado.status === "mensagem_gerada") {
-        registrarAcao(workspaceId, "resposta");
+        await registrarAcao(workspaceId, "resposta");
         processados++;
       }
     }

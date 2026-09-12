@@ -19,9 +19,10 @@ export async function POST(request: NextRequest) {
     }
     requireWorkspaceAccess(usuario, body.workspaceId);
 
-    const workspace = getDb()
+    const db = await getDb();
+    const workspace = await db
       .prepare("SELECT icp, ofertas FROM workspaces WHERE id = ?")
-      .get(body.workspaceId) as { icp: string; ofertas: string } | undefined;
+      .get<{ icp: string; ofertas: string }>(body.workspaceId);
     if (!workspace) throw new ErroApi(404, "Workspace não encontrado.");
 
     const analise = await analisarLead({
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
     });
     const acao = decidirAcaoComentario(analise.nota, analise.concorrente);
 
-    registrarComentario({
+    await registrarComentario({
       workspaceId: body.workspaceId,
       postId: body.postId,
       autorInstagram: body.autorInstagram,

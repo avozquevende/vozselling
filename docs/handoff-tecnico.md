@@ -6,7 +6,7 @@ Passando o bastão: o que é, como roda, como sobe, onde estão as armadilhas e 
 
 ## Comece por aqui
 
-Clone, crie o `.env.local` (peça as chaves ao responsável — nunca estão neste doc), rode `npm install` e `npm run dev`. Abre em `localhost:3000`. O banco é um arquivo (`data/dreamrobot.db`). Leia a seção 9 (Armadilhas) antes do primeiro commit.
+Clone, crie o `.env.local` (peça as chaves ao responsável — nunca estão neste doc), rode `npm install` e `npm run dev`. Abre em `localhost:3000`. Sem `TURSO_DATABASE_URL`, o banco cai num arquivo local (`data/dreamrobot.db`) — bom pra dev, nunca pra produção serverless (ver seção 02). Leia a seção 9 (Armadilhas) antes do primeiro commit.
 
 ## 01 — O que é
 
@@ -15,7 +15,7 @@ Voz Selling é uma ferramenta de prospecção e condução de vendas no Instagra
 ## 02 — Stack
 
 - **Framework**: Next.js 15 · React 19, App Router puro, TypeScript. Server Components acessam o banco direto.
-- **Banco**: SQLite (`better-sqlite3`). Um arquivo, acesso síncrono. Sem ORM. Conexão em cache no `globalThis`.
+- **Banco**: SQLite via Turso (`@libsql/client`), banco remoto — obrigatório em qualquer deploy serverless (Vercel): um arquivo local não sobrevive entre instâncias diferentes da mesma função, o que quebrava login de forma intermitente antes desta migração. Sem `TURSO_DATABASE_URL`, cai num arquivo local via `file:` (só dev). `src/lib/db.ts` expõe um `Db`/`Statement` que imita a API do better-sqlite3 (`prepare(sql).get/all/run(...)`), só que assíncrona — todo acesso ao banco no código é `await`. Conexão em cache no `globalThis`.
 - **IA**: OpenAI `gpt-4o-mini` via `A1_MODEL`/`A3_MODEL`. Chaves Anthropic e Gemini também suportadas — troca é só variável de ambiente (`src/lib/llm.ts`).
 - **CSS**: Tailwind 4. Sem `tailwind.config`. Tokens em `@theme` dentro de `globals.css`.
 - **Externos**: Meta (Instagram Messaging API oficial), Apify (raspagem, módulo à parte). Sem cobrança nesta instância.
@@ -34,6 +34,10 @@ APIFY_TOKEN=...           # opcional local
 IG_APP_ID=...
 IG_APP_SECRET=...
 CRON_SECRET=qualquer-coisa
+# Turso — obrigatório em produção serverless, opcional em dev local
+# (sem isto, cai num arquivo local, ver seção 02):
+TURSO_DATABASE_URL=...
+TURSO_AUTH_TOKEN=...
 
 npm run dev
 
@@ -208,10 +212,12 @@ Duas correções aplicadas antes de ligar com dados reais:
 4. **Datas: sempre `datetime('now','localtime')`.** `new Date().toISOString()` é UTC — quebra freios diários no Brasil.
 5. **`next-env.d.ts` e cache de tipos do Next.** `rm -rf .next*/types` resolve erro fantasma no `tsc`.
 6. **Comentário explica por quê, não o quê.**
+7. **Sem `TURSO_DATABASE_URL` em produção serverless, login falha de forma intermitente.** Cada instância da função pode ter seu próprio arquivo `/tmp` — a sessão criada numa não existe na outra. Foi exatamente isso que quebrou o primeiro deploy de teste no Vercel; a migração pra `@libsql/client`/Turso (seção 02) resolveu de vez.
+8. **Editar valor de env var no Vercel não é suficiente — precisa de redeploy.** A função já rodando não relê env vars sozinha.
 
 ## 10 — Estado atual & pendências
 
 - **Esqueleto no ar**: núcleo funcional criado nesta sessão (schema, lib de domínio, rotas, UI). Ainda não testado contra contas reais do Instagram nem chaves de produção.
 - **Segurança**: guards de workspace (`requireWorkspaceAccess`) aplicados nas rotas criadas; auditoria completa das rotas ainda pendente conforme o produto crescer.
 - **Bloqueio**: Meta App Review — sem isso, só contas testadoras conectam.
-- **Dívida conhecida**: SQLite não escala além de ~20 usuários com folga; migração para Postgres antes de 50 clientes.
+- **Dívida conhecida**: Turso é SQLite hospedado — escala bem mais que arquivo local, mas ainda vale revisar Postgres se o volume de escrita crescer muito (dezenas de workspaces ativos ao mesmo tempo).

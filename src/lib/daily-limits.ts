@@ -19,11 +19,11 @@ export interface LimitesWorkspace {
   teto_follows_dia: number;
 }
 
-export function limitesDoWorkspace(workspaceId: number): LimitesWorkspace {
-  const db = getDb();
-  const row = db
+export async function limitesDoWorkspace(workspaceId: number): Promise<LimitesWorkspace> {
+  const db = await getDb();
+  const row = await db
     .prepare("SELECT workspace_id, teto_adicoes_dia, teto_follows_dia FROM limites_workspace WHERE workspace_id = ?")
-    .get(workspaceId) as LimitesWorkspace | undefined;
+    .get<LimitesWorkspace>(workspaceId);
 
   if (row) return row;
 
@@ -31,11 +31,12 @@ export function limitesDoWorkspace(workspaceId: number): LimitesWorkspace {
   return { workspace_id: workspaceId, teto_adicoes_dia: 50, teto_follows_dia: 50 };
 }
 
-export function definirLimitesDoWorkspace(
+export async function definirLimitesDoWorkspace(
   workspaceId: number,
   limites: { tetoAdicoesDia: number; tetoFollowsDia: number },
-): void {
-  getDb()
+): Promise<void> {
+  const db = await getDb();
+  await db
     .prepare(
       `INSERT INTO limites_workspace (workspace_id, teto_adicoes_dia, teto_follows_dia)
        VALUES (?, ?, ?)
@@ -46,27 +47,27 @@ export function definirLimitesDoWorkspace(
     .run(workspaceId, limites.tetoAdicoesDia, limites.tetoFollowsDia);
 }
 
-function contarAcoesDesde(workspaceId: number, tipo: TipoAcao, desde: string): number {
-  const db = getDb();
-  const row = db
+async function contarAcoesDesde(workspaceId: number, tipo: TipoAcao, desde: string): Promise<number> {
+  const db = await getDb();
+  const row = await db
     .prepare(
       `SELECT COUNT(*) AS total FROM acoes_prospeccao
        WHERE workspace_id = ? AND tipo = ? AND criado_em >= datetime('now','localtime', ?)`,
     )
-    .get(workspaceId, tipo, desde) as { total: number };
-  return row.total;
+    .get<{ total: number }>(workspaceId, tipo, desde);
+  return row!.total;
 }
 
-function contarAcoesHoje(workspaceId: number, tipo: TipoAcao): number {
-  const db = getDb();
-  const row = db
+async function contarAcoesHoje(workspaceId: number, tipo: TipoAcao): Promise<number> {
+  const db = await getDb();
+  const row = await db
     .prepare(
       `SELECT COUNT(*) AS total FROM acoes_prospeccao
        WHERE workspace_id = ? AND tipo = ?
          AND date(criado_em) = date('now','localtime')`,
     )
-    .get(workspaceId, tipo) as { total: number };
-  return row.total;
+    .get<{ total: number }>(workspaceId, tipo);
+  return row!.total;
 }
 
 export interface VerificacaoLimite {
@@ -75,27 +76,26 @@ export interface VerificacaoLimite {
   teto: number;
 }
 
-export function podeAdicionar(workspaceId: number): VerificacaoLimite {
-  const teto = limitesDoWorkspace(workspaceId).teto_adicoes_dia;
-  const usado = contarAcoesHoje(workspaceId, "adicao");
-  return { liberado: usado < teto, usado, teto };
+export async function podeAdicionar(workspaceId: number): Promise<VerificacaoLimite> {
+  const limites = await limitesDoWorkspace(workspaceId);
+  const usado = await contarAcoesHoje(workspaceId, "adicao");
+  return { liberado: usado < limites.teto_adicoes_dia, usado, teto: limites.teto_adicoes_dia };
 }
 
-export function podeSeguir(workspaceId: number): VerificacaoLimite {
-  const teto = limitesDoWorkspace(workspaceId).teto_follows_dia;
-  const usado = contarAcoesHoje(workspaceId, "follow");
-  return { liberado: usado < teto, usado, teto };
+export async function podeSeguir(workspaceId: number): Promise<VerificacaoLimite> {
+  const limites = await limitesDoWorkspace(workspaceId);
+  const usado = await contarAcoesHoje(workspaceId, "follow");
+  return { liberado: usado < limites.teto_follows_dia, usado, teto: limites.teto_follows_dia };
 }
 
 /** Respostas do robô/operador não têm teto diário, só ritmo por hora. */
-export function podeResponderAgora(workspaceId: number): VerificacaoLimite {
-  const usado = contarAcoesDesde(workspaceId, "resposta", "-1 hours");
+export async function podeResponderAgora(workspaceId: number): Promise<VerificacaoLimite> {
+  const usado = await contarAcoesDesde(workspaceId, "resposta", "-1 hours");
   return { liberado: usado < TETO_RESPOSTAS_HORA, usado, teto: TETO_RESPOSTAS_HORA };
 }
 
 /** Comentário automático conta como atendimento (não gasta cota de prospecção). */
-export function registrarAcao(workspaceId: number, tipo: TipoAcao): void {
-  getDb()
-    .prepare("INSERT INTO acoes_prospeccao (workspace_id, tipo) VALUES (?, ?)")
-    .run(workspaceId, tipo);
+export async function registrarAcao(workspaceId: number, tipo: TipoAcao): Promise<void> {
+  const db = await getDb();
+  await db.prepare("INSERT INTO acoes_prospeccao (workspace_id, tipo) VALUES (?, ?)").run(workspaceId, tipo);
 }

@@ -14,9 +14,10 @@ export default async function WorkspaceDetalhePage({
   const { id } = await params;
   const workspaceId = Number(id);
 
-  const workspace = getDb()
-    .prepare("SELECT id, nome FROM workspaces WHERE id = ?")
-    .get(workspaceId) as { id: number; nome: string } | undefined;
+  const db = await getDb();
+  const workspace = (await db.prepare("SELECT id, nome FROM workspaces WHERE id = ?").get(workspaceId)) as
+    | { id: number; nome: string }
+    | undefined;
   if (!workspace) notFound();
 
   return (

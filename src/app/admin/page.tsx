@@ -1,11 +1,11 @@
 import { getDb } from "@/lib/db";
 
-export default function AdminHomePage() {
-  const db = getDb();
-  const { total: totalWorkspaces } = db
+export default async function AdminHomePage() {
+  const db = await getDb();
+  const { total: totalWorkspaces } = (await db
     .prepare("SELECT COUNT(*) AS total FROM workspaces")
-    .get() as { total: number };
-  const { total: totalLeads } = db.prepare("SELECT COUNT(*) AS total FROM leads").get() as {
+    .get()) as { total: number };
+  const { total: totalLeads } = (await db.prepare("SELECT COUNT(*) AS total FROM leads").get()) as {
     total: number;
   };
 

@@ -27,8 +27,10 @@ export async function GET() {
       sessionSecret: presente(process.env.SESSION_SECRET),
     },
     banco: {
-      // Sem DB_PATH customizado, a Vercel cai em /tmp — efêmero (handoff, seção 04).
-      persistente: presente(process.env.DB_PATH) || !process.env.VERCEL,
+      turso: presente(process.env.TURSO_DATABASE_URL),
+      // Sem Turso nem DB_PATH customizado, a Vercel cai num arquivo em /tmp —
+      // efêmero, não sobrevive entre instâncias da função (handoff, seção 09).
+      persistente: presente(process.env.TURSO_DATABASE_URL) || presente(process.env.DB_PATH) || !process.env.VERCEL,
     },
   });
 }

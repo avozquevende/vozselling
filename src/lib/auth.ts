@@ -64,12 +64,14 @@ function linhaParaUsuario(row: unknown): Usuario {
 }
 
 export async function criarSessao(usuarioId: number): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   const token = randomBytes(32).toString("hex");
-  db.prepare(
-    `INSERT INTO sessoes (token, usuario_id, expira_em)
-     VALUES (?, ?, datetime('now','localtime', ?))`,
-  ).run(token, usuarioId, `+${SESSAO_DIAS} days`);
+  await db
+    .prepare(
+      `INSERT INTO sessoes (token, usuario_id, expira_em)
+       VALUES (?, ?, datetime('now','localtime', ?))`,
+    )
+    .run(token, usuarioId, `+${SESSAO_DIAS} days`);
 
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NOME, token, {
@@ -85,7 +87,8 @@ export async function destruirSessao(): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NOME)?.value;
   if (token) {
-    getDb().prepare("DELETE FROM sessoes WHERE token = ?").run(token);
+    const db = await getDb();
+    await db.prepare("DELETE FROM sessoes WHERE token = ?").run(token);
   }
   cookieStore.delete(COOKIE_NOME);
 }
@@ -95,8 +98,8 @@ export async function usuarioDaSessao(): Promise<Usuario | null> {
   const token = cookieStore.get(COOKIE_NOME)?.value;
   if (!token) return null;
 
-  const db = getDb();
-  const row = db
+  const db = await getDb();
+  const row = await db
     .prepare(
       `SELECT u.id, u.workspace_id, u.nome, u.email, u.papel
        FROM sessoes s

@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     if (!workspaceId) throw new ErroApi(400, "workspaceId é obrigatório.");
     requireWorkspaceAccess(usuario, workspaceId);
 
-    const usuarios = getDb()
+    const db = await getDb();
+    const usuarios = await db
       .prepare("SELECT id, nome FROM usuarios WHERE workspace_id = ? ORDER BY nome ASC")
       .all(workspaceId);
 
