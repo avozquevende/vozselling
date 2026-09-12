@@ -3,11 +3,12 @@ import { getDb } from "@/lib/db";
 import { buscarProntosParaToque } from "@/lib/retomada";
 import { processarToqueDeRetomada } from "@/lib/agent-retomada";
 import { podeResponderAgora, registrarAcao } from "@/lib/daily-limits";
+import { verificarSegredoCron } from "@/lib/auth";
 
 // dr-cron.sh lotes (handoff, seção 04): processa os toques de retomada que
 // venceram, um por lead calado, respeitando o mesmo teto de ritmo humano.
 export async function POST(request: NextRequest) {
-  if (request.headers.get("x-cron-secret") !== process.env.CRON_SECRET) {
+  if (!verificarSegredoCron(request.headers.get("x-cron-secret"))) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
 

@@ -19,7 +19,12 @@ export async function GET(request: NextRequest) {
 
 function assinaturaValida(corpoRaw: string, assinatura: string | null): boolean {
   const segredo = process.env.IG_APP_SECRET;
-  if (!segredo) return true; // sem chave configurada ainda (dev local) — não bloqueia
+  // Fecha por padrão: sem IG_APP_SECRET configurado, a URL do webhook fica
+  // pública e adivinhável (/api/webhooks/instagram) — aceitar tudo sem
+  // segredo deixaria qualquer um injetar "mensagem recebida" falsa e gastar
+  // crédito de IA com lead que não existe. Testar o webhook localmente
+  // exige configurar IG_APP_SECRET mesmo em dev.
+  if (!segredo) return false;
   if (!assinatura) return false;
 
   const esperada = `sha256=${createHmac("sha256", segredo).update(corpoRaw).digest("hex")}`;

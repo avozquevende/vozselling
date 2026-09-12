@@ -3,12 +3,13 @@ import { getDb } from "@/lib/db";
 import { buscarFilaDoPiloto } from "@/lib/piloto";
 import { processarProximaMensagem } from "@/lib/agent-piloto";
 import { podeResponderAgora, registrarAcao } from "@/lib/daily-limits";
+import { verificarSegredoCron } from "@/lib/auth";
 
 // Roda a cada minuto (piloto-cron.sh no crontab do servidor, handoff seção 04).
 // Respeita o teto de 40 respostas/hora mesmo entre workspaces diferentes
 // dentro da mesma chamada — para na hora que estourar, não força a fila.
 export async function POST(request: NextRequest) {
-  if (request.headers.get("x-cron-secret") !== process.env.CRON_SECRET) {
+  if (!verificarSegredoCron(request.headers.get("x-cron-secret"))) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
 

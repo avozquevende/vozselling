@@ -29,6 +29,20 @@ export function hashSenha(senha: string): string {
   return `${salt}:${hash}`;
 }
 
+/**
+ * Compara contra CRON_SECRET em tempo constante — usado por toda rota que só
+ * aceita chamada de máquina (crons, bootstrap-admin). `!==` direto vaza
+ * timing e não tem por que custar nada evitar.
+ */
+export function verificarSegredoCron(fornecido: string | null | undefined): boolean {
+  const esperado = process.env.CRON_SECRET;
+  if (!esperado || !fornecido) return false;
+  const bufEsperado = Buffer.from(esperado);
+  const bufFornecido = Buffer.from(fornecido);
+  if (bufEsperado.length !== bufFornecido.length) return false;
+  return timingSafeEqual(bufEsperado, bufFornecido);
+}
+
 export function verificarSenha(senha: string, senhaHash: string): boolean {
   const [salt, hash] = senhaHash.split(":");
   if (!salt || !hash) return false;

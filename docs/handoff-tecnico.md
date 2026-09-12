@@ -193,6 +193,13 @@ Sem esses segredos, o workflow roda mas falha na chamada (401). O agendamento do
 
 `/setup` — formulário visual equivalente ao `POST /api/setup/bootstrap-admin` (que por sua vez é o equivalente remoto do `scripts/criar-acesso.mjs`, que só funciona com acesso a filesystem local). Pede o `CRON_SECRET` (o mesmo das env vars do Vercel) + nome/email/senha, e cria (ou atualiza, se o email já existir) um acesso `admin`. Depois disso, login normal em `/login`.
 
+### 08.5 — Reforço de segurança (revisão sênior antes do go-live)
+
+Duas correções aplicadas antes de ligar com dados reais:
+
+1. **Webhook fecha por padrão.** `/api/webhooks/instagram` antes aceitava qualquer payload sem assinatura quando `IG_APP_SECRET` não estava configurado ("modo dev"). Isso deixava a URL (previsível: `/api/webhooks/instagram`) aberta pra qualquer um injetar "mensagem recebida" falsa assim que o domínio estivesse no ar, mesmo antes do setup do Instagram terminar. Agora rejeita (401) sem a chave configurada — testar o webhook localmente exige `IG_APP_SECRET` mesmo em dev.
+2. **Comparação de segredo em tempo constante.** `cron/piloto`, `cron/retomada` e `setup/bootstrap-admin` comparavam `CRON_SECRET` com `!==` direto — troquei pela `verificarSegredoCron` (auth.ts), que usa `timingSafeEqual` como a senha de login já fazia. Risco prático era baixo (segredo de alta entropia), mas o custo de corrigir é zero.
+
 ## 09 — Armadilhas conhecidas
 
 1. **Migração de schema não roda sozinha.** A conexão fica em cache no `globalThis`. `ALTER TABLE` novo em `db.ts` só roda depois de reiniciar o processo.

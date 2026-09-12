@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hashSenha, ErroApi } from "@/lib/auth";
+import { hashSenha, verificarSegredoCron, ErroApi } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { erroParaResposta } from "@/lib/api-utils";
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       senha?: string;
       nome?: string;
     };
-    if (body.secret !== segredoConfigurado) {
+    if (!verificarSegredoCron(body.secret)) {
       throw new ErroApi(401, "Segredo inválido.");
     }
     if (!body.email || !body.senha || !body.nome) {
