@@ -12,7 +12,9 @@ export async function POST(request: NextRequest) {
 
     const db = await getDb();
     const usuario = await db
-      .prepare("SELECT id, workspace_id, nome, email, papel, senha_hash FROM usuarios WHERE email = ?")
+      .prepare(
+        "SELECT id, workspace_id, nome, email, papel, senha_hash, must_change_password FROM usuarios WHERE email = ?",
+      )
       .get<{
         id: number;
         workspace_id: number | null;
@@ -20,6 +22,7 @@ export async function POST(request: NextRequest) {
         email: string;
         papel: string;
         senha_hash: string;
+        must_change_password: number;
       }>(email);
 
     if (!usuario || !verificarSenha(senha, usuario.senha_hash)) {
@@ -34,6 +37,7 @@ export async function POST(request: NextRequest) {
       nome: usuario.nome,
       email: usuario.email,
       papel: usuario.papel,
+      mustChangePassword: usuario.must_change_password === 1,
     });
   } catch (err) {
     return erroParaResposta(err);

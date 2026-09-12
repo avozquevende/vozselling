@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogoCompact } from "@/app/components/logo";
+import { BTN_PRIMARIO } from "@/app/components/classes-botao";
+
+const inputCls =
+  "w-full min-h-11 bg-surface2 border border-linestrong px-3 text-sm text-ink placeholder:text-steel focus:border-accent outline-none";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,8 +30,12 @@ export default function LoginPage() {
         setErro(erro ?? "Não foi possível entrar.");
         return;
       }
-      const usuario = (await resp.json()) as { papel: string };
-      router.push(usuario.papel === "admin" ? "/admin" : "/social");
+      const usuario = (await resp.json()) as { papel: string; mustChangePassword: boolean };
+      if (usuario.mustChangePassword) {
+        router.push("/trocar-senha");
+      } else {
+        router.push(usuario.papel === "admin" ? "/admin" : "/social");
+      }
       router.refresh();
     } finally {
       setEnviando(false);
@@ -35,33 +44,42 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
-      <h1 className="mb-6 text-xl font-semibold">Entrar no Voz Selling</h1>
+      <div className="mb-8">
+        <LogoCompact />
+      </div>
+      <span className="eyebrow text-accent">Entrar</span>
+      <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold mt-1 mb-6">
+        Voz Selling
+      </h1>
       <form onSubmit={entrar} className="flex flex-col gap-3">
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="rounded-md border px-3 py-2"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          required
-          className="rounded-md border px-3 py-2"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        />
-        {erro && <p style={{ color: "var(--color-erro)" }}>{erro}</p>}
-        <button
-          type="submit"
-          disabled={enviando}
-          className="rounded-md px-3 py-2 font-medium disabled:opacity-50"
-          style={{ background: "var(--color-marca)", color: "white" }}
-        >
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">E-mail</span>
+          <input
+            type="email"
+            placeholder="voce@empresa.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className={inputCls}
+          />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">Senha</span>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            required
+            className={inputCls}
+          />
+        </label>
+        {erro && (
+          <p role="alert" className="text-sm text-danger">
+            {erro}
+          </p>
+        )}
+        <button type="submit" disabled={enviando} className={`${BTN_PRIMARIO} mt-2`}>
           {enviando ? "Entrando…" : "Entrar"}
         </button>
       </form>

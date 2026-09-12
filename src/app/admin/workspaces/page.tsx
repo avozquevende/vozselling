@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { BTN_PRIMARIO } from "@/app/components/classes-botao";
 
 interface Workspace {
   id: number;
@@ -10,6 +11,9 @@ interface Workspace {
   ativo: number;
   criado_em: string;
 }
+
+const inputCls =
+  "min-h-11 bg-surface2 border border-linestrong px-3 text-sm text-ink placeholder:text-steel focus:border-accent outline-none";
 
 export default function WorkspacesPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -45,53 +49,51 @@ export default function WorkspacesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <form onSubmit={criar} className="flex gap-2">
-        <input
-          placeholder="Nome do cliente"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          required
-          className="rounded-md border px-3 py-2"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        />
-        <input
-          placeholder="slug (ex: academia-x)"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          required
-          className="rounded-md border px-3 py-2"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        />
-        <button
-          type="submit"
-          disabled={enviando}
-          className="rounded-md px-3 py-2 text-sm font-medium disabled:opacity-50"
-          style={{ background: "var(--color-marca)", color: "white" }}
-        >
+    <div>
+      <header className="mb-6">
+        <span className="eyebrow text-accent">Admin · Sua carteira</span>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl font-extrabold mt-1">
+          Clientes
+        </h1>
+      </header>
+
+      <form onSubmit={criar} className="border border-linestrong bg-surface p-5 mb-8 flex flex-wrap gap-3 items-end">
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">Nome do cliente</span>
+          <input value={nome} onChange={(e) => setNome(e.target.value)} required className={inputCls} />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">Slug</span>
+          <input
+            placeholder="academia-x"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            required
+            className={inputCls}
+          />
+        </label>
+        <button type="submit" disabled={enviando} className={BTN_PRIMARIO}>
           Criar workspace
         </button>
       </form>
 
-      <div className="flex flex-col gap-2">
+      <div className="border border-linestrong bg-surface divide-y divide-line">
         {workspaces.map((w) => (
           <Link
             key={w.id}
             href={`/admin/workspaces/${w.id}`}
-            className="flex items-center justify-between rounded-lg border px-4 py-3"
-            style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
+            className="flex items-center justify-between px-5 py-4 hover:bg-surface2/60 transition-colors"
           >
             <div>
-              <p className="font-medium">{w.nome}</p>
-              <p className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-                {w.slug}
-              </p>
+              <p className="font-medium text-sm">{w.nome}</p>
+              <p className="text-xs text-muted mt-0.5 font-[family-name:var(--font-mono)]">{w.slug}</p>
             </div>
-            <span className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
+            <span className={`eyebrow ${w.ativo ? "text-ok" : "text-steel"}`}>
               {w.ativo ? "ativo" : "inativo"}
             </span>
           </Link>
         ))}
+        {workspaces.length === 0 && <p className="px-5 py-4 text-sm text-muted">Nenhum workspace ainda.</p>}
       </div>
     </div>
   );

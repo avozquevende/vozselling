@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { LeadPainel } from "./tipos";
+import { BTN_PRIMARIO_MIUDO } from "@/app/components/classes-botao";
 
 // Fila do piloto: leads em etapa "conduz" onde quem falou por último foi o
 // lead — é a vez do robô responder, dentro da janela de 24h.
@@ -42,39 +43,26 @@ export function Direct({ workspaceId }: { workspaceId: number }) {
     }
   }
 
-  if (carregando) return <p className="text-texto-fraco">Carregando Direct…</p>;
+  if (carregando) return <p className="text-sm text-muted">Carregando Direct…</p>;
 
   return (
-    <div className="flex flex-col gap-3">
-      {leads.length === 0 && (
-        <p className="text-sm" style={{ color: "var(--color-texto-fraco)" }}>
-          Nenhuma conversa esperando o robô agora.
-        </p>
-      )}
+    <div className="border border-linestrong bg-surface divide-y divide-line">
+      {leads.length === 0 && <p className="px-5 py-4 text-sm text-muted">Nenhuma conversa esperando o robô agora.</p>}
       {leads.map((lead) => (
-        <div
-          key={lead.id}
-          className="rounded-lg border px-4 py-3"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        >
-          <div className="flex items-center justify-between">
-            <p className="font-medium">@{lead.instagram_username}</p>
+        <div key={lead.id} className="px-5 py-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-sm font-medium">@{lead.instagram_username}</p>
             <button
               onClick={() => gerarResposta(lead.id)}
               disabled={gerando === lead.id}
-              className="rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50"
-              style={{ background: "var(--color-marca)", color: "white" }}
+              className={BTN_PRIMARIO_MIUDO}
             >
               {gerando === lead.id ? "Gerando…" : "Gerar resposta"}
             </button>
           </div>
-          <p className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-            {lead.mensagens_robo_count} mensagens do robô nesta conversa
-          </p>
+          <p className="text-xs text-muted mt-0.5">{lead.mensagens_robo_count} mensagens do robô nesta conversa</p>
           {ultimaMensagem?.leadId === lead.id && (
-            <p className="mt-2 rounded-md border p-2 text-sm" style={{ borderColor: "var(--color-marca)" }}>
-              {ultimaMensagem.texto}
-            </p>
+            <p className="mt-2 border border-accent/40 bg-accent/5 p-2.5 text-sm">{ultimaMensagem.texto}</p>
           )}
         </div>
       ))}

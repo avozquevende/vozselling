@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Carreira } from "@/app/admin/dr/Carreira";
+import { BTN_PRIMARIO } from "@/app/components/classes-botao";
 
 interface WorkspaceDetalhe {
   id: number;
@@ -29,10 +30,10 @@ interface StatusInstagram {
   expiraEm?: string;
 }
 
-const campoStyle = {
-  borderColor: "var(--color-borda)",
-  background: "var(--color-superficie)",
-};
+const inputCls =
+  "w-full min-h-11 bg-surface2 border border-linestrong px-3 text-sm text-ink placeholder:text-steel focus:border-accent outline-none";
+const inputSmallCls =
+  "min-h-11 bg-surface2 border border-linestrong px-3 text-sm text-ink placeholder:text-steel focus:border-accent outline-none";
 
 export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
   const [workspace, setWorkspace] = useState<WorkspaceDetalhe | null>(null);
@@ -111,129 +112,88 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
     await carregar();
   }
 
-  if (!workspace || !limites) return <p className="text-texto-fraco">Carregando…</p>;
+  if (!workspace || !limites) return <p className="text-sm text-muted">Carregando…</p>;
 
   return (
     <div className="flex flex-col gap-8">
-      <form onSubmit={salvar} className="flex flex-col gap-3">
-        <div>
-          <label className="mb-1 block text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-            ICP (perfil de cliente ideal) — alimenta a análise de nota
-          </label>
+      <form onSubmit={salvar} className="border border-linestrong bg-surface p-5 flex flex-col gap-4">
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">ICP (perfil de cliente ideal) — alimenta a análise de nota</span>
           <textarea
             value={workspace.icp}
             onChange={(e) => setWorkspace({ ...workspace, icp: e.target.value })}
             rows={3}
-            className="w-full rounded-md border p-2 text-sm"
-            style={campoStyle}
+            className={inputCls}
           />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-            Ofertas do negócio
-          </label>
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">Ofertas do negócio</span>
           <textarea
             value={workspace.ofertas}
             onChange={(e) => setWorkspace({ ...workspace, ofertas: e.target.value })}
             rows={2}
-            className="w-full rounded-md border p-2 text-sm"
-            style={campoStyle}
+            className={inputCls}
           />
-        </div>
-        <div className="flex gap-4">
-          <div>
-            <label className="mb-1 block text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-              Teto de adições/dia
-            </label>
+        </label>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="eyebrow text-muted">Teto de adições/dia</span>
             <input
               type="number"
               min={0}
               value={limites.teto_adicoes_dia}
               onChange={(e) => setLimites({ ...limites, teto_adicoes_dia: Number(e.target.value) })}
-              className="w-32 rounded-md border p-2 text-sm"
-              style={campoStyle}
+              className={`w-32 ${inputSmallCls}`}
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-              Teto de follows/dia
-            </label>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="eyebrow text-muted">Teto de follows/dia</span>
             <input
               type="number"
               min={0}
               value={limites.teto_follows_dia}
               onChange={(e) => setLimites({ ...limites, teto_follows_dia: Number(e.target.value) })}
-              className="w-32 rounded-md border p-2 text-sm"
-              style={campoStyle}
+              className={`w-32 ${inputSmallCls}`}
             />
-          </div>
+          </label>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={salvando}
-            className="w-fit rounded-md px-3 py-2 text-sm font-medium disabled:opacity-50"
-            style={{ background: "var(--color-marca)", color: "white" }}
-          >
+          <button type="submit" disabled={salvando} className={BTN_PRIMARIO}>
             {salvando ? "Salvando…" : "Salvar configurações"}
           </button>
-          {salvo && (
-            <span className="text-sm" style={{ color: "var(--color-ok)" }}>
-              Salvo.
-            </span>
-          )}
+          {salvo && <span className="text-sm text-ok">Salvo.</span>}
         </div>
       </form>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-texto-fraco)" }}>
-          Instagram
-        </h2>
+        <h2 className="eyebrow text-steel mb-3">Instagram</h2>
         {instagram?.conectado ? (
-          <div
-            className="flex items-center justify-between rounded-lg border px-4 py-3"
-            style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-          >
+          <div className="flex items-center justify-between border border-linestrong bg-surface px-5 py-4">
             <p className="text-sm">
               Conectado {instagram.username ? `como @${instagram.username}` : ""}
             </p>
-            <span className="text-xs" style={{ color: "var(--color-ok)" }}>
-              ativo
-            </span>
+            <span className="eyebrow text-ok">ativo</span>
           </div>
         ) : (
-          <a
-            href={`/api/instagram/conectar?workspaceId=${workspaceId}`}
-            className="inline-block w-fit rounded-md px-3 py-2 text-sm font-medium"
-            style={{ background: "var(--color-marca)", color: "white" }}
-          >
+          <a href={`/api/instagram/conectar?workspaceId=${workspaceId}`} className={BTN_PRIMARIO}>
             Conectar Instagram
           </a>
         )}
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-texto-fraco)" }}>
-          Operadores
-        </h2>
-        <div className="mb-3 flex flex-col gap-2">
+        <h2 className="eyebrow text-steel mb-3">Operadores</h2>
+        <div className="mb-4 border border-linestrong bg-surface divide-y divide-line">
           {usuarios.map((u) => (
-            <div
-              key={u.id}
-              className="rounded-lg border px-4 py-2"
-              style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-            >
-              <div className="flex items-center justify-between">
+            <div key={u.id} className="px-5 py-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-sm font-medium">{u.nome}</p>
                 <div className="flex items-center gap-3">
-                  <p className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-                    {u.email}
-                  </p>
+                  <p className="text-xs text-muted font-[family-name:var(--font-mono)]">{u.email}</p>
                   {u.papel === "operador" && (
                     <button
                       onClick={() => setCarreiraAberta(carreiraAberta === u.id ? null : u.id)}
-                      className="text-xs font-medium underline"
-                      style={{ color: "var(--color-marca)" }}
+                      className="text-xs font-medium underline text-accentink hover:text-accent"
                     >
                       {carreiraAberta === u.id ? "fechar carreira" : "ver carreira"}
                     </button>
@@ -247,11 +207,7 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
               )}
             </div>
           ))}
-          {usuarios.length === 0 && (
-            <p className="text-sm" style={{ color: "var(--color-texto-fraco)" }}>
-              Nenhum operador ainda.
-            </p>
-          )}
+          {usuarios.length === 0 && <p className="px-5 py-4 text-sm text-muted">Nenhum operador ainda.</p>}
         </div>
         <form onSubmit={criarOperador} className="flex flex-wrap gap-2">
           <input
@@ -259,8 +215,7 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
             value={nomeOperador}
             onChange={(e) => setNomeOperador(e.target.value)}
             required
-            className="rounded-md border px-3 py-2 text-sm"
-            style={campoStyle}
+            className={inputSmallCls}
           />
           <input
             placeholder="Email"
@@ -268,8 +223,7 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
             value={emailOperador}
             onChange={(e) => setEmailOperador(e.target.value)}
             required
-            className="rounded-md border px-3 py-2 text-sm"
-            style={campoStyle}
+            className={inputSmallCls}
           />
           <input
             placeholder="Senha"
@@ -277,22 +231,13 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
             value={senhaOperador}
             onChange={(e) => setSenhaOperador(e.target.value)}
             required
-            className="rounded-md border px-3 py-2 text-sm"
-            style={campoStyle}
+            className={inputSmallCls}
           />
-          <button
-            type="submit"
-            className="rounded-md px-3 py-2 text-sm font-medium"
-            style={{ background: "var(--color-marca)", color: "white" }}
-          >
+          <button type="submit" className={BTN_PRIMARIO}>
             Criar operador
           </button>
         </form>
-        {erroOperador && (
-          <p className="mt-2 text-sm" style={{ color: "var(--color-erro)" }}>
-            {erroOperador}
-          </p>
-        )}
+        {erroOperador && <p className="mt-2 text-sm text-danger">{erroOperador}</p>}
       </section>
     </div>
   );

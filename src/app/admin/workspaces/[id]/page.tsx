@@ -22,23 +22,22 @@ export default async function WorkspaceDetalhePage({
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-xl font-semibold">{workspace.nome}</h1>
+      <header>
+        <span className="eyebrow text-accent">Cliente</span>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl font-extrabold mt-1">
+          {workspace.nome}
+        </h1>
+      </header>
       <section>
-        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-texto-fraco)" }}>
-          Ranking
-        </h2>
+        <h2 className="eyebrow text-steel mb-3">Ranking</h2>
         <Ranking workspaceId={workspace.id} />
       </section>
       <section>
-        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-texto-fraco)" }}>
-          Pipeline
-        </h2>
+        <h2 className="eyebrow text-steel mb-3">Pipeline</h2>
         <Pipeline workspaceId={workspace.id} />
       </section>
       <section>
-        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-texto-fraco)" }}>
-          Configurações
-        </h2>
+        <h2 className="eyebrow text-steel mb-3">Configurações</h2>
         <WorkspaceConfig workspaceId={workspace.id} />
       </section>
     </div>

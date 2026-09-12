@@ -13,6 +13,7 @@ export interface Usuario {
   nome: string;
   email: string;
   papel: Papel;
+  must_change_password: boolean;
 }
 
 export class ErroApi extends Error {
@@ -59,8 +60,9 @@ function linhaParaUsuario(row: unknown): Usuario {
     nome: string;
     email: string;
     papel: string;
+    must_change_password: number;
   };
-  return { ...r, papel: r.papel as Papel };
+  return { ...r, papel: r.papel as Papel, must_change_password: r.must_change_password === 1 };
 }
 
 export async function criarSessao(usuarioId: number): Promise<void> {
@@ -101,7 +103,7 @@ export async function usuarioDaSessao(): Promise<Usuario | null> {
   const db = await getDb();
   const row = await db
     .prepare(
-      `SELECT u.id, u.workspace_id, u.nome, u.email, u.papel
+      `SELECT u.id, u.workspace_id, u.nome, u.email, u.papel, u.must_change_password
        FROM sessoes s
        JOIN usuarios u ON u.id = s.usuario_id
        WHERE s.token = ? AND s.expira_em > datetime('now','localtime')`,

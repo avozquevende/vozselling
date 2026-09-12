@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BTN_PRIMARIO_MIUDO } from "@/app/components/classes-botao";
 
 interface DescricaoNivel {
   nivel: string;
@@ -44,10 +45,7 @@ interface DadosCarreira {
 }
 
 const NIVEIS = ["executor", "interprete", "gestor", "expert"];
-
-function linhaStyle() {
-  return { borderColor: "var(--color-borda)", background: "var(--color-superficie)" };
-}
+const inputCls = "min-h-11 bg-surface2 border border-linestrong px-3 text-sm text-ink outline-none";
 
 // Mesma implementação em /social/carreira (própria visão, sem editar) e no
 // admin (visão de qualquer operador, com poder de promover/rebaixar).
@@ -88,20 +86,16 @@ export function Carreira({ endpoint, podeEditar }: { endpoint: string; podeEdita
     }
   }
 
-  if (carregando || !dados) return <p className="text-texto-fraco">Carregando carreira…</p>;
+  if (carregando || !dados) return <p className="text-sm text-muted">Carregando carreira…</p>;
 
   const { descricao, proximoNivel, metricas, metas, sinalizacao, historico } = dados;
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border p-4" style={linhaStyle()}>
-        <p className="text-xs uppercase tracking-wide" style={{ color: "var(--color-texto-fraco)" }}>
-          Nível atual
-        </p>
-        <p className="text-lg font-semibold">{descricao.titulo}</p>
-        <p className="mt-1 text-sm" style={{ color: "var(--color-texto-fraco)" }}>
-          {descricao.descricao}
-        </p>
+      <div className="border border-linestrong bg-surface p-4">
+        <p className="eyebrow text-muted">Nível atual</p>
+        <p className="text-lg font-semibold mt-1">{descricao.titulo}</p>
+        <p className="mt-1 text-sm text-muted">{descricao.descricao}</p>
         {proximoNivel && (
           <p className="mt-2 text-sm">
             <span className="font-medium">Próximo passo:</span> {descricao.proximoPasso}
@@ -109,55 +103,47 @@ export function Carreira({ endpoint, podeEditar }: { endpoint: string; podeEdita
         )}
       </div>
 
-      <div className="rounded-lg border p-4" style={linhaStyle()}>
-        <p className="mb-2 text-xs uppercase tracking-wide" style={{ color: "var(--color-texto-fraco)" }}>
-          Métricas dos últimos 7 dias (metas de referência do método)
-        </p>
+      <div className="border border-linestrong bg-surface p-4">
+        <p className="eyebrow text-muted mb-3">Métricas dos últimos 7 dias (metas de referência do método)</p>
         <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
           <div>
             <p className="font-semibold">{metricas.abordagens}</p>
-            <p style={{ color: "var(--color-texto-fraco)" }}>
+            <p className="text-muted">
               Abordagens (meta {metas.abordagensMin}-{metas.abordagensMax})
             </p>
           </div>
           <div>
             <p className="font-semibold">{metricas.sessoesAgendadas}</p>
-            <p style={{ color: "var(--color-texto-fraco)" }}>
+            <p className="text-muted">
               Sessões (meta {metas.sessoesMin}-{metas.sessoesMax})
             </p>
           </div>
           <div>
             <p className="font-semibold">{metricas.respostaPct}%</p>
-            <p style={{ color: "var(--color-texto-fraco)" }}>Resposta (meta ≥{metas.respostaPctMin}%)</p>
+            <p className="text-muted">Resposta (meta ≥{metas.respostaPctMin}%)</p>
           </div>
           <div>
             <p className="font-semibold">
               {metricas.tempoRespostaHoras === null ? "—" : `${metricas.tempoRespostaHoras}h`}
             </p>
-            <p style={{ color: "var(--color-texto-fraco)" }}>Tempo resposta (meta ≤{metas.tempoRespostaHorasMax}h)</p>
+            <p className="text-muted">Tempo resposta (meta ≤{metas.tempoRespostaHorasMax}h)</p>
           </div>
         </div>
-        <p className="mt-3 text-xs" style={{ color: "var(--color-texto-fraco)" }}>
+        <p className="mt-3 text-xs text-muted">
           Só conta o que estiver atribuído a você em leads (campo &quot;responsável&quot; no Pipeline). Sem lead
           atribuído, as métricas ficam zeradas.
         </p>
       </div>
 
-      <div
-        className="rounded-lg border p-4"
-        style={{
-          borderColor: sinalizacao.pronto ? "var(--color-ok)" : "var(--color-borda)",
-          background: "var(--color-superficie)",
-        }}
-      >
+      <div className={`border p-4 ${sinalizacao.pronto ? "border-ok/60 bg-ok/5" : "border-linestrong bg-surface"}`}>
         {sinalizacao.pronto ? (
-          <p className="text-sm" style={{ color: "var(--color-ok)" }}>
+          <p className="text-sm text-ok">
             Métricas bateram a meta do método esta semana — vale conversar sobre o próximo nível.
           </p>
         ) : (
           <div className="text-sm">
             <p className="mb-1 font-medium">Ainda não bate a meta pra sinalizar promoção:</p>
-            <ul className="list-inside list-disc" style={{ color: "var(--color-texto-fraco)" }}>
+            <ul className="list-inside list-disc text-muted">
               {sinalizacao.motivos.map((m) => (
                 <li key={m}>{m}</li>
               ))}
@@ -167,19 +153,12 @@ export function Carreira({ endpoint, podeEditar }: { endpoint: string; podeEdita
       </div>
 
       {podeEditar && (
-        <form onSubmit={definirNivel} className="flex flex-col gap-2 rounded-lg border p-4" style={linhaStyle()}>
-          <p className="text-xs uppercase tracking-wide" style={{ color: "var(--color-texto-fraco)" }}>
-            Definir nível (ação do admin — nunca automática)
-          </p>
+        <form onSubmit={definirNivel} className="flex flex-col gap-2 border border-linestrong bg-surface p-4">
+          <p className="eyebrow text-muted">Definir nível (ação do admin — nunca automática)</p>
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={novoNivel}
-              onChange={(e) => setNovoNivel(e.target.value)}
-              className="rounded-md border px-3 py-2 text-sm"
-              style={linhaStyle()}
-            >
+            <select value={novoNivel} onChange={(e) => setNovoNivel(e.target.value)} className={inputCls}>
               {NIVEIS.map((n) => (
-                <option key={n} value={n} style={{ color: "black" }}>
+                <option key={n} value={n}>
                   {n}
                 </option>
               ))}
@@ -188,15 +167,9 @@ export function Carreira({ endpoint, podeEditar }: { endpoint: string; podeEdita
               placeholder="Observação (opcional)"
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
-              className="min-w-[200px] flex-1 rounded-md border px-3 py-2 text-sm"
-              style={linhaStyle()}
+              className={`min-w-[200px] flex-1 ${inputCls}`}
             />
-            <button
-              type="submit"
-              disabled={salvando}
-              className="rounded-md px-3 py-2 text-sm font-medium disabled:opacity-50"
-              style={{ background: "var(--color-marca)", color: "white" }}
-            >
+            <button type="submit" disabled={salvando} className={BTN_PRIMARIO_MIUDO}>
               {salvando ? "Salvando…" : "Confirmar nível"}
             </button>
           </div>
@@ -204,13 +177,11 @@ export function Carreira({ endpoint, podeEditar }: { endpoint: string; podeEdita
       )}
 
       {historico.length > 0 && (
-        <div className="rounded-lg border p-4" style={linhaStyle()}>
-          <p className="mb-2 text-xs uppercase tracking-wide" style={{ color: "var(--color-texto-fraco)" }}>
-            Histórico
-          </p>
+        <div className="border border-linestrong bg-surface p-4">
+          <p className="eyebrow text-muted mb-2">Histórico</p>
           <ul className="flex flex-col gap-1 text-sm">
             {historico.map((h) => (
-              <li key={h.id} style={{ color: "var(--color-texto-fraco)" }}>
+              <li key={h.id} className="text-muted">
                 {h.criado_em} — {h.nivel_anterior} → {h.nivel_novo}
                 {h.observacao ? ` (${h.observacao})` : ""}
               </li>

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import type { EtapaPainel, LeadPainel } from "./tipos";
+import { BTN_PRIMARIO_MIUDO, BTN_SECUNDARIO_MIUDO } from "@/app/components/classes-botao";
 
 // A nota é a única coisa do produto que muda de cor por categoria — todo o
 // resto usa a linguagem de estado (ok/atenção/erro). Ver spec, seção 03.
 function corDaNota(nota: number | null): string {
-  if (nota === null) return "var(--color-texto-fraco)";
+  if (nota === null) return "var(--color-steel)";
   if (nota >= 90) return "var(--color-nota-alta)";
   if (nota >= 70) return "var(--color-nota-media)";
   if (nota >= 50) return "var(--color-nota-parcial)";
@@ -69,64 +70,39 @@ export function Ranking({ workspaceId }: { workspaceId: number }) {
     .filter((l) => l.etapa_papel === "fila")
     .sort((a, b) => (b.nota ?? -1) - (a.nota ?? -1));
 
-  if (carregando) return <p className="text-texto-fraco">Carregando Ranking…</p>;
-  if (erro) return <p style={{ color: "var(--color-erro)" }}>{erro}</p>;
+  if (carregando) return <p className="text-sm text-muted">Carregando Ranking…</p>;
+  if (erro) return <p className="text-sm text-danger">{erro}</p>;
 
   return (
-    <div className="flex flex-col gap-2">
-      {naFila.length === 0 && (
-        <p className="text-sm" style={{ color: "var(--color-texto-fraco)" }}>
-          Ninguém na fila do Ranking ainda.
-        </p>
-      )}
+    <div className="border border-linestrong bg-surface divide-y divide-line">
+      {naFila.length === 0 && <p className="px-5 py-4 text-sm text-muted">Ninguém na fila do Ranking ainda.</p>}
       {naFila.map((lead) => (
-        <div
-          key={lead.id}
-          className="flex items-center justify-between rounded-lg border px-4 py-3"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        >
+        <div key={lead.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div className="flex items-center gap-3">
             <span
-              className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
-              style={{ background: corDaNota(lead.nota), color: "#0b0d10" }}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold shrink-0"
+              style={{ background: corDaNota(lead.nota), color: "var(--color-bg)" }}
             >
               {lead.nota ?? "–"}
             </span>
             <div>
-              <p className="font-medium">
+              <p className="text-sm font-medium">
                 @{lead.instagram_username}
-                {lead.concorrente === 1 && (
-                  <span className="ml-2 text-xs" style={{ color: "var(--color-atencao)" }}>
-                    concorrente
-                  </span>
-                )}
+                {lead.concorrente === 1 && <span className="ml-2 eyebrow text-warn">concorrente</span>}
               </p>
-              {lead.nome && (
-                <p className="text-sm" style={{ color: "var(--color-texto-fraco)" }}>
-                  {lead.nome}
-                </p>
-              )}
-              {lead.motivo_nota && (
-                <p className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-                  {lead.motivo_nota}
-                </p>
-              )}
+              {lead.nome && <p className="text-sm text-muted">{lead.nome}</p>}
+              {lead.motivo_nota && <p className="text-xs text-muted mt-0.5">{lead.motivo_nota}</p>}
             </div>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => analisarLead(lead.id)}
               disabled={analisando === lead.id}
-              className="rounded-md border px-3 py-1.5 text-sm font-medium disabled:opacity-50"
-              style={{ borderColor: "var(--color-borda)" }}
+              className={BTN_SECUNDARIO_MIUDO}
             >
               {analisando === lead.id ? "Analisando…" : lead.nota === null ? "Analisar" : "Reanalisar"}
             </button>
-            <button
-              onClick={() => ativarLead(lead.id)}
-              className="rounded-md px-3 py-1.5 text-sm font-medium"
-              style={{ background: "var(--color-marca)", color: "white" }}
-            >
+            <button onClick={() => ativarLead(lead.id)} className={BTN_PRIMARIO_MIUDO}>
               Ativar
             </button>
           </div>

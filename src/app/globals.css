@@ -1,41 +1,97 @@
 @import "tailwindcss";
 
 @theme {
-  --color-fundo: #0b0d10;
-  --color-superficie: #14171c;
-  --color-superficie-alta: #1c2027;
-  --color-borda: #262b33;
-  --color-texto: #e8eaed;
-  --color-texto-fraco: #9aa1ac;
+  /* Superfícies. Três degraus: fundo, cartão, e o realce de dentro do cartão. */
+  --color-bg: #131313;
+  --color-surface: #1b1b1b;
+  --color-surface2: #1f1f1f;
+  --color-surface3: #2a2a2a;
 
-  --color-marca: #7c5cff;
-  --color-marca-forte: #6a45ff;
+  /* Texto em três pesos. */
+  --color-ink: #e2e2e2;
+  --color-muted: #9a9a94;
+  --color-steel: #8a8a82;
 
-  --color-ok: #34d399;
-  --color-atencao: #fbbf24;
-  --color-erro: #f87171;
+  /* Duas bordas: `line` separa (decorativa), `linestrong` delimita (é a
+     affordance de botão secundário e campo de formulário). */
+  --color-line: #444933;
+  --color-linestrong: #6b7355;
 
-  /* nota 0-100: cor por faixa, é a única coisa do produto que muda de cor por categoria */
-  --color-nota-alta: #34d399;
-  --color-nota-media: #a3e635;
-  --color-nota-parcial: #fbbf24;
-  --color-nota-fraca: #fb923c;
-  --color-nota-fora: #f87171;
+  /* O acento. Uma ação primária por tela, item ativo da navegação, alerta. */
+  --color-accent: #c3f400;
+  --color-accentink: #d4ff33;
 
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --color-ok: #4ade80;
+  --color-warn: #fbbf24;
+  --color-danger: #ff5a6e;
+
+  /* Faixas da nota do lead (0-100) — a única coisa que muda de cor por categoria. */
+  --color-nota-alta: #c3f400;
+  --color-nota-media: #a5cc2e;
+  --color-nota-parcial: #8e9379;
+  --color-nota-fraca: #8a8a82;
+  --color-nota-fora: #6b6b63;
+
+  --font-display: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-body: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", monospace;
 }
 
-html,
 body {
-  height: 100%;
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(rgba(195, 244, 0, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(195, 244, 0, 0.022) 1px, transparent 1px);
+  background-size: 48px 48px;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
 }
 
-body {
-  background: var(--color-fundo);
-  color: var(--color-texto);
-  font-family: var(--font-sans);
+::selection {
+  background: rgba(195, 244, 0, 0.3);
 }
 
-* {
-  box-sizing: border-box;
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+main [class*="border-linestrong"],
+main [class*="border-line"],
+main [class*="border-dashed"] {
+  border-radius: 12px;
+}
+button.bg-accent,
+a.bg-accent {
+  border-radius: 999px;
+}
+main table [class*="border-line"],
+main thead tr,
+main tbody tr {
+  border-radius: 0;
+}
+
+input, textarea, select {
+  outline: none;
+  border-radius: 8px;
+}
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

@@ -267,6 +267,10 @@ async function runMigrations(client: Client): Promise<void> {
     "ALTER TABLE leads ADD COLUMN responsavel_id INTEGER REFERENCES usuarios(id)",
     // executor | interprete | gestor | expert — ver lib/carreira.ts.
     "ALTER TABLE usuarios ADD COLUMN nivel_carreira TEXT NOT NULL DEFAULT 'executor'",
+    // Senha provisória gerada pelo admin (tela /admin/usuarios): força a
+    // pessoa a trocar no primeiro login, em vez de ficar usando a que veio
+    // pronta.
+    "ALTER TABLE usuarios ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0",
   ];
 
   for (const sql of migrations) {

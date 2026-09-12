@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogoCompact } from "@/app/components/logo";
+import { BTN_PRIMARIO } from "@/app/components/classes-botao";
+
+const inputCls =
+  "w-full min-h-11 bg-surface2 border border-linestrong px-3 text-sm text-ink placeholder:text-steel focus:border-accent outline-none";
 
 // Cria o primeiro (ou próximo) acesso admin sem precisar de curl/terminal —
 // equivalente visual do POST em /api/setup/bootstrap-admin. Exige o
@@ -41,15 +46,14 @@ export default function SetupPage() {
   if (sucesso) {
     return (
       <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 px-4">
-        <h1 className="text-xl font-semibold">Acesso criado.</h1>
-        <p className="text-sm" style={{ color: "var(--color-texto-fraco)" }}>
+        <span className="eyebrow text-accent">Pronto</span>
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold">
+          Acesso criado.
+        </h1>
+        <p className="text-sm text-muted">
           Agora entre com o email e a senha que você acabou de definir.
         </p>
-        <button
-          onClick={() => router.push("/login")}
-          className="rounded-md px-3 py-2 font-medium"
-          style={{ background: "var(--color-marca)", color: "white" }}
-        >
+        <button onClick={() => router.push("/login")} className={BTN_PRIMARIO}>
           Ir para o login
         </button>
       </div>
@@ -58,55 +62,60 @@ export default function SetupPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
-      <h1 className="mb-1 text-xl font-semibold">Criar acesso admin</h1>
-      <p className="mb-6 text-sm" style={{ color: "var(--color-texto-fraco)" }}>
-        O segredo abaixo é o mesmo valor de <code>CRON_SECRET</code> configurado nas variáveis de
-        ambiente do Vercel — sem ele, ninguém consegue criar login por aqui.
+      <div className="mb-8">
+        <LogoCompact />
+      </div>
+      <span className="eyebrow text-accent">Configuração inicial</span>
+      <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold mt-1 mb-2">
+        Criar acesso admin
+      </h1>
+      <p className="mb-6 text-sm text-muted">
+        O segredo abaixo é o mesmo valor de <code className="text-accentink">CRON_SECRET</code>{" "}
+        configurado nas variáveis de ambiente do Vercel — sem ele, ninguém consegue criar login
+        por aqui.
       </p>
       <form onSubmit={criar} className="flex flex-col gap-3">
-        <input
-          type="password"
-          placeholder="CRON_SECRET"
-          value={secret}
-          onChange={(e) => setSecret(e.target.value)}
-          required
-          className="rounded-md border px-3 py-2"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        />
-        <input
-          placeholder="Seu nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          required
-          className="rounded-md border px-3 py-2"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="rounded-md border px-3 py-2"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        />
-        <input
-          type="password"
-          placeholder="Senha (a que você vai usar pra entrar)"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          required
-          minLength={8}
-          className="rounded-md border px-3 py-2"
-          style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-        />
-        {erro && <p style={{ color: "var(--color-erro)" }}>{erro}</p>}
-        <button
-          type="submit"
-          disabled={enviando}
-          className="rounded-md px-3 py-2 font-medium disabled:opacity-50"
-          style={{ background: "var(--color-marca)", color: "white" }}
-        >
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">CRON_SECRET</span>
+          <input
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            required
+            className={inputCls}
+          />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">Seu nome</span>
+          <input value={nome} onChange={(e) => setNome(e.target.value)} required className={inputCls} />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">E-mail</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className={inputCls}
+          />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="eyebrow text-muted">Senha (a que você vai usar pra entrar)</span>
+          <input
+            type="password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            required
+            minLength={8}
+            className={inputCls}
+          />
+        </label>
+        {erro && (
+          <p role="alert" className="text-sm text-danger">
+            {erro}
+          </p>
+        )}
+        <button type="submit" disabled={enviando} className={`${BTN_PRIMARIO} mt-2`}>
           {enviando ? "Criando…" : "Criar acesso"}
         </button>
       </form>

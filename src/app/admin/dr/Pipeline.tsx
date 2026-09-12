@@ -8,6 +8,8 @@ interface Colega {
   nome: string;
 }
 
+const selectCls = "mt-2 w-full bg-surface2 border border-linestrong p-1.5 text-xs text-ink";
+
 export function Pipeline({ workspaceId }: { workspaceId: number }) {
   const [leads, setLeads] = useState<LeadPainel[]>([]);
   const [etapas, setEtapas] = useState<EtapaPainel[]>([]);
@@ -53,58 +55,42 @@ export function Pipeline({ workspaceId }: { workspaceId: number }) {
     carregar();
   }
 
-  if (carregando) return <p className="text-texto-fraco">Carregando Pipeline…</p>;
+  if (carregando) return <p className="text-sm text-muted">Carregando Pipeline…</p>;
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
       {etapas.map((etapa) => {
         const leadsDaEtapa = leads.filter((l) => l.etapa_id === etapa.id);
         return (
-          <div
-            key={etapa.id}
-            className="flex w-64 shrink-0 flex-col gap-2 rounded-lg border p-3"
-            style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie)" }}
-          >
+          <div key={etapa.id} className="flex w-64 shrink-0 flex-col gap-2 border border-linestrong bg-surface p-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold">{etapa.nome}</p>
-              <span className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-                {leadsDaEtapa.length}
-              </span>
+              <span className="eyebrow text-muted">{leadsDaEtapa.length}</span>
             </div>
-            <p className="text-xs" style={{ color: "var(--color-texto-fraco)" }}>
-              papel: {etapa.papel}
-            </p>
+            <p className="eyebrow text-steel">papel: {etapa.papel}</p>
             <div className="flex flex-col gap-2">
               {leadsDaEtapa.map((lead) => (
-                <div
-                  key={lead.id}
-                  className="rounded-md border p-2"
-                  style={{ borderColor: "var(--color-borda)", background: "var(--color-superficie-alta)" }}
-                >
+                <div key={lead.id} className="border border-line bg-surface2 p-2.5">
                   <p className="text-sm font-medium">@{lead.instagram_username}</p>
                   <select
-                    className="mt-2 w-full rounded border bg-transparent p-1 text-xs"
-                    style={{ borderColor: "var(--color-borda)" }}
+                    className={selectCls}
                     value={etapa.id}
                     onChange={(e) => mover(lead.id, Number(e.target.value))}
                   >
                     {etapas.map((op) => (
-                      <option key={op.id} value={op.id} style={{ color: "black" }}>
+                      <option key={op.id} value={op.id}>
                         {op.nome}
                       </option>
                     ))}
                   </select>
                   <select
-                    className="mt-1 w-full rounded border bg-transparent p-1 text-xs"
-                    style={{ borderColor: "var(--color-borda)" }}
+                    className={selectCls}
                     value={lead.responsavel_id ?? ""}
                     onChange={(e) => atribuir(lead.id, e.target.value ? Number(e.target.value) : null)}
                   >
-                    <option value="" style={{ color: "black" }}>
-                      Sem responsável
-                    </option>
+                    <option value="">Sem responsável</option>
                     {colegas.map((c) => (
-                      <option key={c.id} value={c.id} style={{ color: "black" }}>
+                      <option key={c.id} value={c.id}>
                         {c.nome}
                       </option>
                     ))}
