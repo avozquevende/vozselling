@@ -70,6 +70,24 @@ export async function leadEstaNaJanela24h(lead: LeadNaFila): Promise<boolean> {
   return row?.dentro === 1;
 }
 
+/**
+ * Faltando menos de 6h para a janela de 24h da Meta fechar, o robô é
+ * avisado e convida em vez de sondar (spec: 75 mensagens até um
+ * agendamento dependem de o lead escrever de novo sem sumir um dia —
+ * cada troca a mais é uma chance de perder a conversa).
+ */
+export async function janelaProximaDeExpirar(lead: LeadNaFila): Promise<boolean> {
+  if (!lead.janela_24h_expira_em) return false;
+  const db = await getDb();
+  const row = await db
+    .prepare(
+      "SELECT (julianday(?) - julianday(datetime('now','localtime'))) * 24 AS horas",
+    )
+    .get<{ horas: number | null }>(lead.janela_24h_expira_em);
+  if (row?.horas == null) return false;
+  return row.horas > 0 && row.horas < 6;
+}
+
 /** Confere que a etapa atual do lead realmente autoriza o robô a falar. */
 export async function roboAutorizadoNaEtapa(etapaId: number): Promise<boolean> {
   const etapa = await etapaPorId(etapaId);

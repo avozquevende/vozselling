@@ -2,6 +2,7 @@ import { getDb } from "./db";
 import { gerarTexto } from "./llm";
 import {
   type ModoConversa,
+  janelaProximaDeExpirar,
   modoDaProximaMensagem,
   podeConvidar,
   roboAutorizadoNaEtapa,
@@ -15,17 +16,19 @@ const INSTRUCAO_POR_MODO: Record<ModoConversa, string> = {
   conexao:
     "Modo CONEXÃO: construir relação, zero venda. Pergunte sobre a pessoa, o conteúdo dela, comente algo genuíno. Não mencione produto, oferta ou convite.",
   conducao:
-    "Modo CONDUÇÃO: sondagem, entender a dor. Faça perguntas abertas sobre o problema/contexto dela. Ainda sem oferecer nada.",
+    "Modo CONDUÇÃO: sondagem, entender a dor. Faça perguntas abertas sobre o problema/contexto dela. Ainda sem oferecer nada. Se ela perguntar o que você faz, responda direto (duas ou três linhas, sem inventar preço/prazo/formato que não esteja em <ofertas>) e só depois convide — mudar de assunto quando ela pergunta é ignorar quem levantou a mão.",
   convite:
-    "Modo CONVITE: agora sim, convide para uma conversa/chamada, de forma natural, sem parecer script.",
+    "Modo CONVITE: agora sim, convide para uma conversa/chamada, de forma natural, sem parecer script. Se vier objeção (preço, 'já tentei antes', 'vou pensar'), isso não é recusa — é obstáculo pra call, não motivo pra desistir. Concorda com o que ela disse e devolve a pergunta pro que ela ainda quer (nunca argumenta preço, nunca defende valor no Direct). A objeção de fundo se resolve NA CALL, não aqui.",
   agendamento:
-    "Modo AGENDAMENTO: ofereça 2 horários concretos para a conversa. Nunca deixe em aberto ('quando puder').",
+    "Modo AGENDAMENTO: ofereça 2 horários concretos para a conversa. Nunca deixe em aberto ('quando puder'). Horário aceito sozinho não fecha o agendamento — sem um contato direto (WhatsApp) combinado, ainda é convite: peça o WhatsApp como parte de confirmar o horário, nunca depois.",
   excedeu_regua:
     "A régua da conversa acabou. Não gere mensagem — o lead deve voltar para o operador humano.",
 };
 
 const SISTEMA_BASE = `Você escreve mensagens de Instagram Direct como se fosse a pessoa dona do perfil (não como assistente).
-Frase curta, tom humano e falado, nunca em blocos longos. Nunca se identifique como IA.
+Frase curta, tom humano e falado, nunca em blocos longos — no máximo 3 blocos, e só o último termina em pergunta (nunca pergunta em cada bloco).
+Nunca inicia se apresentando como IA, mas se o lead perguntar diretamente ("você é um robô?", "isso é automático?") NUNCA negue — a Meta reprova esse comportamento no review e é falta grave de política depois. Admita com naturalidade e continue a conversa normalmente, sem se desculpar por isso.
+Nunca fala preço, valor, forma de pagamento ou contrato no Direct, mesmo se perguntado direto — isso é do humano, na call.
 Siga estritamente o modo indicado abaixo — ele diz o que pode e o que não pode ainda.`;
 
 /**
@@ -33,8 +36,14 @@ Siga estritamente o modo indicado abaixo — ele diz o que pode e o que não pod
  * ainda) — nunca muda por método. O conteúdo do Filippe (buscarSecao) entra
  * por cima: script, exemplos, forma de perguntar — a voz, não a régua.
  */
-async function montarSistema(modo: Exclude<ModoConversa, "excedeu_regua">): Promise<string> {
-  const base = `${SISTEMA_BASE}\n\n${INSTRUCAO_POR_MODO[modo]}`;
+async function montarSistema(
+  modo: Exclude<ModoConversa, "excedeu_regua">,
+  janelaCurta: boolean,
+): Promise<string> {
+  let base = `${SISTEMA_BASE}\n\n${INSTRUCAO_POR_MODO[modo]}`;
+  if (janelaCurta && (modo === "conexao" || modo === "conducao")) {
+    base += `\n\nFaltam menos de 6h para a janela de resposta do Instagram fechar. Não dá mais tempo pra sondar com calma: avance e convide para a conversa/call agora, mesmo que ainda esteja cedo na régua.`;
+  }
   const [tomDeVoz, doMetodo] = await Promise.all([buscarSecao("tom_de_voz"), buscarSecao(modo)]);
   const partes = [tomDeVoz, doMetodo].filter(Boolean);
   if (partes.length === 0) return base;
@@ -90,7 +99,8 @@ export async function processarProximaMensagem(lead: LeadNaFila): Promise<Result
   }
 
   const historico = await buscarHistorico(lead.id);
-  const sistema = await montarSistema(modo);
+  const janelaCurta = await janelaProximaDeExpirar(lead);
+  const sistema = await montarSistema(modo, janelaCurta);
   const texto = await gerarTexto({
     modelo: process.env.A3_MODEL ?? "gpt-4o-mini",
     sistema,
