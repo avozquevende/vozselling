@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Carreira } from "@/app/admin/dr/Carreira";
-import { BTN_PRIMARIO } from "@/app/components/classes-botao";
+import { BTN_PRIMARIO, BTN_DESTRUTIVO } from "@/app/components/classes-botao";
 
 interface WorkspaceDetalhe {
   id: number;
@@ -10,6 +10,7 @@ interface WorkspaceDetalhe {
   slug: string;
   icp: string;
   ofertas: string;
+  automacao_pausada: number;
 }
 
 interface Limites {
@@ -48,6 +49,7 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
   const [senhaOperador, setSenhaOperador] = useState("");
   const [erroOperador, setErroOperador] = useState<string | null>(null);
   const [carreiraAberta, setCarreiraAberta] = useState<number | null>(null);
+  const [pausando, setPausando] = useState(false);
 
   async function carregar() {
     const [respWorkspace, respUsuarios] = await Promise.all([
@@ -93,6 +95,22 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
     }
   }
 
+  async function alternarAutomacao() {
+    if (!workspace) return;
+    const pausar = workspace.automacao_pausada === 0;
+    setPausando(true);
+    try {
+      await fetch(`/api/admin/workspaces/${workspaceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ automacaoPausada: pausar }),
+      });
+      setWorkspace({ ...workspace, automacao_pausada: pausar ? 1 : 0 });
+    } finally {
+      setPausando(false);
+    }
+  }
+
   async function criarOperador(e: React.FormEvent) {
     e.preventDefault();
     setErroOperador(null);
@@ -116,6 +134,31 @@ export function WorkspaceConfig({ workspaceId }: { workspaceId: number }) {
 
   return (
     <div className="flex flex-col gap-8">
+      <div
+        className={`flex flex-wrap items-center justify-between gap-3 border p-4 ${
+          workspace.automacao_pausada === 1 ? "border-danger/60 bg-danger/10" : "border-linestrong bg-surface"
+        }`}
+      >
+        <div>
+          <p className="eyebrow text-muted">Automação (piloto + retomada)</p>
+          <p className="text-sm mt-1">
+            {workspace.automacao_pausada === 1 ? (
+              <span className="text-danger font-medium">Pausada — o robô não responde nem retoma ninguém agora.</span>
+            ) : (
+              "Rodando normalmente."
+            )}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={alternarAutomacao}
+          disabled={pausando}
+          className={workspace.automacao_pausada === 1 ? BTN_PRIMARIO : BTN_DESTRUTIVO}
+        >
+          {pausando ? "Aplicando…" : workspace.automacao_pausada === 1 ? "Retomar automação" : "Parar tudo"}
+        </button>
+      </div>
+
       <form onSubmit={salvar} className="border border-linestrong bg-surface p-5 flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="eyebrow text-muted">ICP (perfil de cliente ideal) — alimenta a análise de nota</span>

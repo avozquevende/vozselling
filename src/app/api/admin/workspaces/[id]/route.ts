@@ -13,10 +13,19 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     const db = await getDb();
     const workspace = await db
-      .prepare("SELECT id, nome, slug, ativo, icp, ofertas, criado_em FROM workspaces WHERE id = ?")
-      .get<{ id: number; nome: string; slug: string; ativo: number; icp: string; ofertas: string; criado_em: string }>(
-        workspaceId,
-      );
+      .prepare(
+        "SELECT id, nome, slug, ativo, icp, ofertas, automacao_pausada, criado_em FROM workspaces WHERE id = ?",
+      )
+      .get<{
+        id: number;
+        nome: string;
+        slug: string;
+        ativo: number;
+        icp: string;
+        ofertas: string;
+        automacao_pausada: number;
+        criado_em: string;
+      }>(workspaceId);
     if (!workspace) throw new ErroApi(404, "Workspace não encontrado.");
 
     const [conta, limites] = await Promise.all([
@@ -46,6 +55,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       ofertas?: string;
       tetoAdicoesDia?: number;
       tetoFollowsDia?: number;
+      automacaoPausada?: boolean;
     };
 
     const db = await getDb();
@@ -65,6 +75,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         tetoAdicoesDia: body.tetoAdicoesDia ?? atuais.teto_adicoes_dia,
         tetoFollowsDia: body.tetoFollowsDia ?? atuais.teto_follows_dia,
       });
+    }
+
+    // "Parar tudo": pausa piloto e retomada deste workspace inteiro, sem
+    // precisar desconectar a conta do Instagram.
+    if (body.automacaoPausada !== undefined) {
+      await db
+        .prepare("UPDATE workspaces SET automacao_pausada = ? WHERE id = ?")
+        .run(body.automacaoPausada ? 1 : 0, workspaceId);
     }
 
     return NextResponse.json({ ok: true });

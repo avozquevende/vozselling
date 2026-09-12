@@ -11,6 +11,7 @@ import {
 import { etapasDoWorkspace, moverLeadParaEtapa } from "./etapas";
 import { enviarParaLead } from "./instagram-sync";
 import { buscarSecao } from "./metodologia";
+import { avaliarUltimaMensagem } from "./travas-conversa";
 
 const INSTRUCAO_POR_MODO: Record<ModoConversa, string> = {
   conexao:
@@ -73,6 +74,7 @@ export interface ResultadoPiloto {
   status: "mensagem_gerada" | "devolvido_ao_operador" | "robo_nao_autorizado";
   texto?: string;
   modo?: ModoConversa;
+  motivo?: string;
 }
 
 /**
@@ -84,6 +86,19 @@ export interface ResultadoPiloto {
 export async function processarProximaMensagem(lead: LeadNaFila): Promise<ResultadoPiloto> {
   if (!(await roboAutorizadoNaEtapa(lead.etapa_id))) {
     return { status: "robo_nao_autorizado" };
+  }
+
+  const historico = await buscarHistorico(lead.id);
+
+  // Trava de conversa em código (ver travas-conversa.ts): olha só a última
+  // mensagem do lead — é o gatilho mais recente que importa, não o
+  // histórico inteiro. Determinístico, não depende do LLM obedecer.
+  const ultimaDoLead = [...historico].reverse().find((m) => m.remetente === "lead");
+  const trava = ultimaDoLead ? avaliarUltimaMensagem(ultimaDoLead.texto) : null;
+  if (trava) {
+    await devolverAoOperador(lead);
+    if (trava === "raiva") await desativarPiloto(lead.id);
+    return { status: "devolvido_ao_operador", motivo: trava };
   }
 
   const modo = modoDaProximaMensagem(lead.mensagens_robo_count);
@@ -98,7 +113,6 @@ export async function processarProximaMensagem(lead: LeadNaFila): Promise<Result
     return { status: "robo_nao_autorizado", modo };
   }
 
-  const historico = await buscarHistorico(lead.id);
   const janelaCurta = await janelaProximaDeExpirar(lead);
   const sistema = await montarSistema(modo, janelaCurta);
   const texto = await gerarTexto({
@@ -131,11 +145,17 @@ async function registrarMensagemDoRobo(leadId: number, texto: string): Promise<v
   ]);
 }
 
-/** Passou da régua (15ª+): sai das mãos do robô, primeira etapa de papel "encerra". */
+/** Passou da régua (15ª+), ou uma trava de conversa disparou: sai das mãos do robô, primeira etapa de papel "encerra". */
 async function devolverAoOperador(lead: LeadNaFila): Promise<void> {
   const etapas = await etapasDoWorkspace(lead.workspace_id);
   const etapaDestino = etapas.find((e) => e.papel === "encerra");
   if (etapaDestino) {
     await moverLeadParaEtapa(lead.id, etapaDestino.id);
   }
+}
+
+/** Trava de raiva/"pediu pra parar": desliga o piloto pra este lead até um humano religar manualmente. */
+async function desativarPiloto(leadId: number): Promise<void> {
+  const db = await getDb();
+  await db.prepare("UPDATE leads SET piloto_desativado = 1 WHERE id = ?").run(leadId);
 }

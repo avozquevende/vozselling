@@ -41,8 +41,11 @@ export interface LeadNaFila {
 
 /**
  * Fila do piloto: leads numa etapa que declara papel "conduz", dentro da
- * janela de 24h da Meta, e onde quem falou por último foi o lead — é a vez
- * do robô responder.
+ * janela de 24h da Meta, onde quem falou por último foi o lead, a automação
+ * do workspace não está pausada ("parar tudo"), o piloto não foi desligado
+ * pra este lead específico (trava de raiva, ver travas-conversa.ts), e o
+ * atraso anti-bloqueio já passou — resposta instantânea é o padrão nº1 que a
+ * Meta reconhece como bot (ver instagram-sync.ts).
  */
 export async function buscarFilaDoPiloto(workspaceId: number): Promise<LeadNaFila[]> {
   const db = await getDb();
@@ -52,10 +55,14 @@ export async function buscarFilaDoPiloto(workspaceId: number): Promise<LeadNaFil
               l.mensagens_robo_count, l.janela_24h_expira_em
        FROM leads l
        JOIN etapas e ON e.id = l.etapa_id
+       JOIN workspaces w ON w.id = l.workspace_id
        WHERE l.workspace_id = ?
          AND e.papel = 'conduz'
          AND l.ultimo_falante = 'lead'
+         AND COALESCE(l.piloto_desativado, 0) = 0
+         AND COALESCE(w.automacao_pausada, 0) = 0
          AND (l.janela_24h_expira_em IS NULL OR l.janela_24h_expira_em > datetime('now','localtime'))
+         AND (l.proximo_toque_liberado_em IS NULL OR l.proximo_toque_liberado_em <= datetime('now','localtime'))
        ORDER BY l.atualizado_em ASC`,
     )
     .all<LeadNaFila>(workspaceId);

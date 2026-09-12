@@ -271,6 +271,17 @@ async function runMigrations(client: Client): Promise<void> {
     // pessoa a trocar no primeiro login, em vez de ficar usando a que veio
     // pronta.
     "ALTER TABLE usuarios ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0",
+    // Trava de conversa (raiva/pediu pra parar, ver lib/travas-conversa.ts):
+    // desliga o piloto pra este lead até um humano religar manualmente.
+    "ALTER TABLE leads ADD COLUMN piloto_desativado INTEGER NOT NULL DEFAULT 0",
+    // Atraso anti-bloqueio (spec do Dream Social real, seção "ritmo"):
+    // resposta instantânea a cada mensagem é o padrão nº1 que a Meta
+    // reconhece como bot. O piloto só pode falar com o lead depois deste
+    // horário — ver lib/instagram-sync.ts.
+    "ALTER TABLE leads ADD COLUMN proximo_toque_liberado_em TEXT",
+    // "Parar tudo" (botão de emergência por workspace): pausa toda automação
+    // — piloto e retomada — sem precisar desconectar a conta do Instagram.
+    "ALTER TABLE workspaces ADD COLUMN automacao_pausada INTEGER NOT NULL DEFAULT 0",
   ];
 
   for (const sql of migrations) {

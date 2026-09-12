@@ -57,6 +57,18 @@ export async function enviarParaLead(
   await enviarMensagemDireta(conta.access_token, conta.instagram_business_id, instagramScopedId, texto);
 }
 
+/**
+ * Atraso anti-bloqueio antes do piloto poder responder (spec do Dream Social
+ * real, seção "ritmo"): resposta instantânea a cada mensagem é o padrão nº1
+ * que a Meta reconhece como bot. Primeira resposta da conversa espera mais
+ * (30s–3min, imita alguém abrindo o app); trocas seguintes esperam pouco
+ * (5–45s, a pessoa já está "na tela").
+ */
+function jitterSegundos(primeiraResposta: boolean): number {
+  const [min, max] = primeiraResposta ? [30, 180] : [5, 45];
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
 export async function processarMensagemRecebida(
   conta: ContaInstagram,
   igsid: string,
@@ -69,15 +81,21 @@ export async function processarMensagemRecebida(
     leadId = await encontrarOuCriarLead(conta, igsid, username);
   }
 
+  const leadAtual = await db
+    .prepare("SELECT mensagens_robo_count FROM leads WHERE id = ?")
+    .get<{ mensagens_robo_count: number }>(leadId);
+  const segundos = jitterSegundos((leadAtual?.mensagens_robo_count ?? 0) === 0);
+
   await db.transaction([
     { sql: "INSERT INTO mensagens (lead_id, remetente, texto) VALUES (?, 'lead', ?)", args: [leadId, texto] },
     {
       sql: `UPDATE leads
             SET ultimo_falante = 'lead',
                 janela_24h_expira_em = datetime('now','localtime','+24 hours'),
+                proximo_toque_liberado_em = datetime('now','localtime', ?),
                 atualizado_em = datetime('now','localtime')
             WHERE id = ?`,
-      args: [leadId],
+      args: [`+${segundos} seconds`, leadId],
     },
   ]);
 }

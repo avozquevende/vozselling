@@ -34,14 +34,40 @@ function assinaturaValida(corpoRaw: string, assinatura: string | null): boolean 
   return timingSafeEqual(bufEsperada, bufRecebida);
 }
 
+interface Anexo {
+  type?: string;
+}
+
 interface EntradaMessaging {
   sender?: { id?: string };
-  message?: { text?: string; is_echo?: boolean };
+  message?: { text?: string; is_echo?: boolean; attachments?: Anexo[] };
 }
 
 interface EntradaWebhook {
   id?: string; // instagram_business_id da conta que recebeu
   messaging?: EntradaMessaging[];
+}
+
+const ROTULO_POR_TIPO_ANEXO: Record<string, string> = {
+  audio: "[áudio]",
+  image: "[foto]",
+  video: "[vídeo]",
+  share: "[compartilhou um post]",
+  story_mention: "[mencionou em um story]",
+};
+
+/**
+ * Mensagem sem texto (áudio, foto, vídeo, story) não pode ser descartada em
+ * silêncio — antes disso a conversa simplesmente travava sem o operador
+ * saber por quê. Sem transcrição de verdade ainda, rotula em português pra
+ * pelo menos o robô/operador saberem que chegou algo e não inventarem
+ * assunto sobre o que não conseguem ler.
+ */
+function textoOuRotuloDoAnexo(mensagem: EntradaMessaging["message"]): string | null {
+  if (mensagem?.text) return mensagem.text;
+  const tipo = mensagem?.attachments?.[0]?.type;
+  if (!tipo) return null;
+  return ROTULO_POR_TIPO_ANEXO[tipo] ?? "[anexo]";
 }
 
 // Comentários automáticos e novas DMs chegam por aqui, não por cron
@@ -66,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     for (const item of entrada.messaging ?? []) {
       const igsid = item.sender?.id;
-      const texto = item.message?.text;
+      const texto = textoOuRotuloDoAnexo(item.message);
       // is_echo = mensagem que a própria conta enviou (pelo robô ou pelo
       // app nativo) refletida de volta pelo webhook — não é resposta do lead.
       if (!igsid || !texto || item.message?.is_echo) continue;

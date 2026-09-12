@@ -106,6 +106,7 @@ export async function zerarRetomada(leadId: number): Promise<void> {
   await db.prepare("UPDATE retomada_fila SET ativo = 0 WHERE lead_id = ? AND ativo = 1").run(leadId);
 }
 
+/** Respeita o mesmo "parar tudo" do piloto (ver piloto.ts/buscarFilaDoPiloto) — pausar automação pausa as duas. */
 export async function buscarProntosParaToque(workspaceId: number): Promise<ItemRetomada[]> {
   const db = await getDb();
   return db
@@ -113,8 +114,11 @@ export async function buscarProntosParaToque(workspaceId: number): Promise<ItemR
       `SELECT r.id, r.lead_id, l.instagram_scoped_id, r.escada, r.passo, r.proximo_toque_em
        FROM retomada_fila r
        JOIN leads l ON l.id = r.lead_id
+       JOIN workspaces w ON w.id = l.workspace_id
        WHERE l.workspace_id = ?
          AND r.ativo = 1
+         AND COALESCE(l.piloto_desativado, 0) = 0
+         AND COALESCE(w.automacao_pausada, 0) = 0
          AND r.proximo_toque_em <= datetime('now','localtime')
        ORDER BY r.proximo_toque_em ASC`,
     )
