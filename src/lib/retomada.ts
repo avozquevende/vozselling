@@ -106,6 +106,45 @@ export async function zerarRetomada(leadId: number): Promise<void> {
   await db.prepare("UPDATE retomada_fila SET ativo = 0 WHERE lead_id = ? AND ativo = 1").run(leadId);
 }
 
+/**
+ * Varre leads que o robô falou por último, a janela de 24h fechou sem
+ * resposta, e ainda não têm retomada ativa — e entra na escada certa pra
+ * cada caso. É o gatilho automático da régua (spec, seção 04: "quem parou
+ * de responder entra numa cadência"); as outras escadas (condução sentiu
+ * venda com certeza, agendamento, proposta, sem caixa, não é prioridade)
+ * continuam disponíveis pra entrada manual via entrarNaFilaDeRetomada — o
+ * próprio spec diz que o motivo "é derivado da etapa, ou marcado à mão".
+ */
+export async function varrerLeadsFriosParaRetomada(workspaceId: number): Promise<number> {
+  const db = await getDb();
+  const candidatos = await db
+    .prepare(
+      `SELECT l.id, l.mensagens_robo_count,
+              EXISTS(SELECT 1 FROM mensagens m WHERE m.lead_id = l.id AND m.remetente = 'lead') AS ja_respondeu
+       FROM leads l
+       JOIN etapas e ON e.id = l.etapa_id
+       WHERE l.workspace_id = ?
+         AND e.papel = 'conduz'
+         AND l.ultimo_falante = 'robo'
+         AND l.janela_24h_expira_em IS NOT NULL
+         AND l.janela_24h_expira_em <= datetime('now','localtime')
+         AND NOT EXISTS (SELECT 1 FROM retomada_fila r WHERE r.lead_id = l.id AND r.ativo = 1)`,
+    )
+    .all<{ id: number; mensagens_robo_count: number; ja_respondeu: number }>(workspaceId);
+
+  for (const lead of candidatos) {
+    const escada: Escada =
+      lead.ja_respondeu === 0
+        ? "ativacao_nao_respondeu"
+        : lead.mensagens_robo_count >= 10
+          ? "conducao_sentiu_venda"
+          : "conexao_esfriou";
+    await entrarNaFilaDeRetomada(lead.id, escada);
+  }
+
+  return candidatos.length;
+}
+
 /** Respeita o mesmo "parar tudo" do piloto (ver piloto.ts/buscarFilaDoPiloto) — pausar automação pausa as duas. */
 export async function buscarProntosParaToque(workspaceId: number): Promise<ItemRetomada[]> {
   const db = await getDb();
